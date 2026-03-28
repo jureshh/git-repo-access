@@ -1,5 +1,4 @@
-// API client — configure BASE_URL to point to your backend
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -14,43 +13,85 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
-// ---- Auth ----
-export async function login(username: string, password: string) {
-  return request<{ success: boolean; user?: { id: number; username: string } }>("/api/login", {
-    method: "POST",
-    body: JSON.stringify({ username, password }),
+async function trpc<T>(procedure: string, input?: unknown): Promise<T> {
+  const res = await fetch(`${BASE_URL}/api/trpc/${procedure}`, {
+    method: input !== undefined ? "POST" : "GET",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: input !== undefined ? JSON.stringify({ json: input }) : undefined,
   });
+  if (!res.ok) throw new Error(`tRPC ${res.status}`);
+  const json = await res.json();
+  return json.result?.data?.json ?? json.result?.data;
 }
 
-export async function logout() {
-  return request("/api/logout", { method: "POST" });
-}
-
+// ---- Auth ----
 export async function getUser() {
-  return request<{ id: number; username: string } | null>("/api/user");
+  return trpc<{ id: number; name: string; email: string } | null>("auth.me");
 }
 
 // ---- Leases ----
 export async function seedSyntheticData() {
-  return request<{ message: string }>("/api/trpc/seedSyntheticData", { method: "POST", body: JSON.stringify({}) });
+  return trpc<{ message: string }>("leases.seedSyntheticData", {});
 }
 
-export async function extractLease(file: File) {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch(`${BASE_URL}/api/extract`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
+export async function extractLease(file: File): Promise<void> {
+  const text = await readPdfText(file);
+  await trpc("leases.extract", { leaseText: text });
+}
+
+async function readPdfText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        if (!(window as any).pdfjsLib) {
+          await loadScript(
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+          );
+          (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        }
+        const pdf = await (window as any).pdfjsLib
+          .getDocument({ data: reader.result as ArrayBuffer })
+          .promise;
+        const pages = await Promise.all(
+          Array.from({ length: pdf.numPages }, (_, i) =>
+            pdf.getPage(i + 1).then((p: any) =>
+              p.getTextContent().then((tc: any) =>
+                tc.items.map((item: any) => item.str).join(" ")
+              )
+            )
+          )
+        );
+        resolve(pages.join("\n\n"));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
   });
-  if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-  return res.json();
+}
+
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
 }
 
 // ---- Dashboard ----
-export interface DashboardData {
-  leases: Lease[];
-  kpis: KpiData;
+export interface KpiData {
+  totalLeases: number;
+  totalMonthlyRevenue: number;
+  avgRentPerUnit: number;
+  occupancyRate: number;
+  expiringLeases: number;
+  avgConfidence: number;
 }
 
 export interface Lease {
@@ -76,20 +117,54 @@ export interface Lease {
   extractionConfidence: number | null;
 }
 
-export interface KpiData {
-  totalLeases: number;
-  totalMonthlyRevenue: number;
-  avgRentPerUnit: number;
-  occupancyRate: number;
-  expiringLeases: number;
-  avgConfidence: number;
+export interface DashboardData {
+  leases: Lease[];
+  kpis: KpiData;
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  return request<DashboardData>("/api/dashboard");
+  const [portfolio, financial, tenants] = await Promise.all([
+    trpc<any>("dashboard.portfolioOverview"),
+    trpc<any>("dashboard.financialPerformance"),
+    trpc<any>("dashboard.tenantAnalysis"),
+  ]);
+
+  const kpis: KpiData = {
+    totalLeases: portfolio?.totalLeases ?? 0,
+    totalMonthlyRevenue: (financial?.totalAnnualizedRent ?? 0) / 12,
+    avgRentPerUnit: financial?.avgRentPerArea ?? 0,
+    occupancyRate: portfolio?.occupancyRate ?? 0,
+    expiringLeases: portfolio?.expiringLeases ?? 0,
+    avgConfidence: portfolio?.avgDataCompleteness ?? 0,
+  };
+
+  const leases: Lease[] = (tenants?.topTenantsByRent ?? []).map((t: any) => ({
+    id: t.id ?? 0,
+    tenantName: t.tenantName ?? "",
+    unitNumber: t.unitNumber ?? "",
+    mallName: t.propertyName ?? "",
+    leaseStartDate: t.leaseStartDate ?? "",
+    leaseEndDate: t.leaseExpiryDate ?? "",
+    monthlyBaseRent: parseFloat(t.currentBaseRent ?? "0"),
+    percentageRent: t.turnoverRentPercentage ? parseFloat(t.turnoverRentPercentage) : null,
+    securityDeposit: null,
+    camCharges: t.serviceChargeCapValue ? parseFloat(t.serviceChargeCapValue) : null,
+    escalationClause: t.indexationIndex ?? null,
+    renewalTerms: null,
+    terminationClause: null,
+    exclusivityClause: null,
+    coTenancyClause: null,
+    operatingHours: null,
+    tenantCategory: t.tenantCategory ?? null,
+    leaseType: null,
+    status: t.extractionStatus ?? "active",
+    extractionConfidence: t.dataCompletenessScore ? parseFloat(t.dataCompletenessScore) : null,
+  }));
+
+  return { leases, kpis };
 }
 
-// ---- Mock data for development / demo ----
+// ---- Mock data (fallback) ----
 export const MOCK_KPIS: KpiData = {
   totalLeases: 147,
   totalMonthlyRevenue: 2840000,
