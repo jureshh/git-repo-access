@@ -14,15 +14,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 async function trpc<T>(procedure: string, input?: unknown): Promise<T> {
-  const res = await fetch(`${BASE_URL}/api/trpc/${procedure}`, {
-    method: input !== undefined ? "POST" : "GET",
+  const url = `${BASE_URL}/api/trpc/${procedure}`;
+  const res = await fetch(url, {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: input !== undefined ? JSON.stringify({ json: input }) : undefined,
+    body: JSON.stringify({ json: input ?? null }),
   });
   if (!res.ok) throw new Error(`tRPC ${res.status}`);
   const json = await res.json();
-  return json.result?.data?.json ?? json.result?.data;
+  return json.result?.data?.json ?? json.result?.data ?? json;
 }
 
 // ---- Auth ----
