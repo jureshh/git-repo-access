@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Building2, LayoutDashboard, Upload, LogIn } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Building2, LayoutDashboard, Upload } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Home", icon: Building2 },
@@ -43,10 +42,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <Button variant="outline" size="sm" className="gap-2">
-            <LogIn className="h-4 w-4" />
-            Sign In
-          </Button>
+          <div className="hidden sm:block text-xs font-medium text-muted-foreground">
+            Demo Mode
+          </div>
         </div>
       </header>
 
