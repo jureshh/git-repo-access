@@ -3,7 +3,6 @@ const BASE_URL = "https://lease-extraction-mvp-production.up.railway.app";
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { "Content-Type": "application/json", ...options?.headers },
-    credentials: "include",
     ...options,
   });
   if (!res.ok) {
@@ -18,7 +17,6 @@ async function trpc<T>(procedure: string, input?: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    credentials: "include",
     body: JSON.stringify({ json: input ?? null }),
   });
   if (!res.ok) throw new Error(`tRPC ${res.status}`);
