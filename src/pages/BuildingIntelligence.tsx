@@ -18,16 +18,16 @@ export default function BuildingIntelligence() {
   };
 
   return (
-    <div className="py-8 lg:py-12">
-      <div className="container space-y-6">
+    <div className="py-4 lg:py-6">
+      <div className="container space-y-4">
         <div style={{ animation: "fade-up 0.5s ease-out forwards" }}>
-          <h1 className="text-3xl font-display font-bold">Building Intelligence Centre</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-display font-bold">Building Intelligence Centre</h1>
+          <p className="text-sm text-muted-foreground">
             Visual floor plan and lease portfolio overview.
           </p>
         </div>
         <SummaryBar />
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-260px)] min-h-[560px]">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-220px)] min-h-[560px]">
           <div className="lg:col-span-3 min-h-0">
             <FloorPlan
               floor={floor}
