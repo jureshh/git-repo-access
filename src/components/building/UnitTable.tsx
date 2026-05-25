@@ -11,7 +11,7 @@ const formatPLN = (v?: number) => (v == null ? "—" : `PLN ${v.toLocaleString()
 
 export function UnitTable({ units, selectedUnitId, onSelectUnit }: Props) {
   return (
-    <Card className="glass h-full flex flex-col overflow-hidden">
+    <Card className="glass flex flex-col overflow-hidden">
       <div className="px-5 py-4 border-b border-border">
         <h2 className="text-sm font-display font-bold tracking-tight">Units on Floor</h2>
         <p className="text-xs text-muted-foreground">Click a row for full lease detail</p>

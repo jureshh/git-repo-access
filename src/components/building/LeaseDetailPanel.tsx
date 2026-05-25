@@ -48,7 +48,7 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
   const isCafe = unit.id === "2-B1";
 
   return (
-    <Card className="glass h-full flex flex-col overflow-hidden animate-in fade-in duration-200">
+    <Card className="glass flex flex-col overflow-hidden animate-in fade-in duration-200">
       <div className="px-5 py-4 border-b border-border flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
