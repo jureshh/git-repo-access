@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -132,8 +132,8 @@ export default function LeaseReview() {
                       const isOpen = !collapsed[group];
                       const tenants = view === "portfolio" ? [...TENANTS] : [activeTenant];
                       return (
-                        <>
-                          <tr key={`g-${group}`} className="bg-muted/40 hover:bg-muted/60 cursor-pointer" onClick={() => toggleGroup(group)}>
+                        <Fragment key={group}>
+                          <tr className="bg-muted/40 hover:bg-muted/60 cursor-pointer" onClick={() => toggleGroup(group)}>
                             <td
                               colSpan={tenants.length + 1}
                               className="px-3 py-2 font-semibold text-foreground border-b"
@@ -169,7 +169,7 @@ export default function LeaseReview() {
                               })}
                             </tr>
                           ))}
-                        </>
+                        </Fragment>
                       );
                     })}
                   </tbody>
