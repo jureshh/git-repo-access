@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Building2, LayoutDashboard, Upload } from "lucide-react";
+import { Building2, LayoutDashboard, LayoutGrid, Upload } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Home", icon: Building2 },
   { to: "/upload", label: "Upload", icon: Upload },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/building", label: "Building", icon: LayoutGrid },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
