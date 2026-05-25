@@ -123,7 +123,7 @@ function UnitShape({
 export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }: Props) {
   const units = unitsByFloor[floor];
   return (
-    <Card className="glass p-3 flex flex-col h-full">
+    <Card className="glass p-3 flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <Tabs value={floor} onValueChange={(v) => onFloorChange(v as Floor)}>
           <TabsList className="bg-muted/50">
@@ -146,11 +146,11 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 rounded-lg overflow-hidden border border-border bg-muted/30">
+      <div className="rounded-lg overflow-hidden border border-border bg-muted/30">
         <svg
           viewBox="0 0 900 480"
-          className="w-full h-full"
-          preserveAspectRatio="xMidYMin meet"
+          className="w-full h-auto block"
+          preserveAspectRatio="xMidYMid meet"
         >
           <defs>
             <pattern
@@ -176,8 +176,8 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
             height={464}
             rx={4}
             fill="hsl(var(--card))"
-            stroke="hsl(var(--foreground))"
-            strokeWidth={3}
+            stroke="hsl(var(--border))"
+            strokeWidth={1}
           />
           <rect x={8} y={8} width={884} height={464} fill="url(#floorGrid)" />
 
