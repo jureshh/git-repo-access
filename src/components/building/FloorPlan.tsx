@@ -1,4 +1,3 @@
-import { Bell } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FLOORS, Floor, STATUS_FILL, Unit, unitsByFloor } from "./data";
@@ -75,9 +74,15 @@ function UnitShape({
         </text>
       )}
       {unit.alert && (
-        <g transform={`translate(${unit.x + unit.w - 22}, ${unit.y + 10})`}>
-          <circle cx={6} cy={6} r={8} fill={fill} />
-          <Bell x={-1} y={-1} size={14} color="white" strokeWidth={2.5} />
+        <g transform={`translate(${unit.x + unit.w - 18}, ${unit.y + 14})`}>
+          <circle cx={0} cy={0} r={8} fill={fill} />
+          <path
+            d="M-3 -3 a3 3 0 0 1 6 0 v2 l1 2 h-8 l1 -2 z M-1.5 2 a1.5 1.5 0 0 0 3 0"
+            fill="none"
+            stroke="white"
+            strokeWidth={1.2}
+            strokeLinejoin="round"
+          />
         </g>
       )}
       <text
