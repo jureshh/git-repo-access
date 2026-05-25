@@ -262,7 +262,7 @@ export default function Dashboard() {
           </div>
 
           <p className="text-right text-[11px] text-muted-foreground">
-            Data extracted: 22 May 2026 · LeaseIQ Demo Mode
+            Data extracted: 22 May 2026 · LeaseOS Demo Mode
           </p>
         </div>
       </div>
