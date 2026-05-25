@@ -27,8 +27,8 @@ export default function BuildingIntelligence() {
           </p>
         </div>
         <SummaryBar />
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-220px)] min-h-[560px]">
-          <div className="lg:col-span-3 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+          <div className="lg:col-span-3">
             <FloorPlan
               floor={floor}
               onFloorChange={handleFloorChange}
@@ -36,7 +36,7 @@ export default function BuildingIntelligence() {
               onSelectUnit={setSelectedUnitId}
             />
           </div>
-          <div className="lg:col-span-2 min-h-0">
+          <div className="lg:col-span-2">
             {selectedUnit ? (
               <LeaseDetailPanel unit={selectedUnit} onClose={() => setSelectedUnitId(null)} />
             ) : (
