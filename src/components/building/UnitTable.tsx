@@ -1,4 +1,5 @@
-import { CARD, STATUS_DOT_LABEL, TEAL, Unit } from "./data";
+import { Card } from "@/components/ui/card";
+import { STATUS_META, Unit } from "./data";
 
 interface Props {
   units: Unit[];
@@ -10,18 +11,15 @@ const formatPLN = (v?: number) => (v == null ? "—" : `PLN ${v.toLocaleString()
 
 export function UnitTable({ units, selectedUnitId, onSelectUnit }: Props) {
   return (
-    <div
-      className="rounded-xl border border-white/5 h-full flex flex-col overflow-hidden"
-      style={{ background: CARD }}
-    >
-      <div className="px-5 py-4 border-b border-white/5">
-        <h2 className="text-sm font-semibold text-white">Units on Floor</h2>
-        <p className="text-xs text-slate-400">Click a row for full lease detail</p>
+    <Card className="glass h-full flex flex-col overflow-hidden">
+      <div className="px-5 py-4 border-b border-border">
+        <h2 className="text-sm font-display font-bold tracking-tight">Units on Floor</h2>
+        <p className="text-xs text-muted-foreground">Click a row for full lease detail</p>
       </div>
       <div className="flex-1 overflow-auto">
         <table className="w-full text-xs">
-          <thead className="sticky top-0" style={{ background: CARD }}>
-            <tr className="text-slate-400 text-left">
+          <thead className="sticky top-0 bg-card z-10">
+            <tr className="text-muted-foreground text-left border-b border-border">
               {["Unit", "Tenant", "sqm", "Annual Rent", "Rent/m²", "Expiry", "WAULT", "Status"].map(
                 (h) => (
                   <th key={h} className="px-3 py-2 font-medium whitespace-nowrap">
@@ -34,31 +32,28 @@ export function UnitTable({ units, selectedUnitId, onSelectUnit }: Props) {
           <tbody>
             {units.map((u, i) => {
               const selected = u.id === selectedUnitId;
-              const meta = STATUS_DOT_LABEL[u.status];
+              const meta = STATUS_META[u.status];
               return (
                 <tr
                   key={u.id}
                   onClick={() => onSelectUnit(u.id)}
-                  className="cursor-pointer transition-colors"
-                  style={{
-                    background: selected
-                      ? "rgba(8,145,178,0.15)"
-                      : i % 2
-                        ? "rgba(255,255,255,0.015)"
-                        : "transparent",
-                    borderLeft: `3px solid ${selected ? TEAL : "transparent"}`,
-                  }}
+                  className={[
+                    "cursor-pointer transition-colors border-l-[3px]",
+                    selected
+                      ? "bg-primary/10 border-primary"
+                      : `border-transparent hover:bg-muted/50 ${i % 2 ? "bg-muted/20" : ""}`,
+                  ].join(" ")}
                 >
-                  <td className="px-3 py-2.5 text-white font-medium">{u.id}</td>
-                  <td className="px-3 py-2.5 text-slate-200">{u.tenant}</td>
-                  <td className="px-3 py-2.5 text-slate-300">{u.sqm.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 text-slate-300">{formatPLN(u.annualRent)}</td>
-                  <td className="px-3 py-2.5 text-slate-300">{formatPLN(u.rentPerM2)}</td>
-                  <td className="px-3 py-2.5 text-slate-300 whitespace-nowrap">
+                  <td className="px-3 py-2.5 font-medium text-foreground">{u.id}</td>
+                  <td className="px-3 py-2.5 text-foreground">{u.tenant}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground">{u.sqm.toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground">{formatPLN(u.annualRent)}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground">{formatPLN(u.rentPerM2)}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
                     {u.expiry ?? "—"}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-300">{u.wault}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-200">
+                  <td className="px-3 py-2.5 text-muted-foreground">{u.wault}</td>
+                  <td className={`px-3 py-2.5 whitespace-nowrap font-medium ${meta.className}`}>
                     <span className="mr-1">{meta.emoji}</span>
                     {u.statusLabel}
                   </td>
@@ -68,6 +63,6 @@ export function UnitTable({ units, selectedUnitId, onSelectUnit }: Props) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }

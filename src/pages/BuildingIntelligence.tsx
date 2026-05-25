@@ -3,7 +3,7 @@ import { FloorPlan } from "@/components/building/FloorPlan";
 import { LeaseDetailPanel } from "@/components/building/LeaseDetailPanel";
 import { SummaryBar } from "@/components/building/SummaryBar";
 import { UnitTable } from "@/components/building/UnitTable";
-import { BG, Floor, unitsByFloor } from "@/components/building/data";
+import { Floor, unitsByFloor } from "@/components/building/data";
 
 export default function BuildingIntelligence() {
   const [floor, setFloor] = useState<Floor>("2");
@@ -18,12 +18,12 @@ export default function BuildingIntelligence() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] py-6" style={{ background: BG }}>
-      <div className="container space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-white">Building Intelligence Centre</h1>
-          <p className="text-sm text-slate-400">
-            Visual floor plan and lease portfolio overview
+    <div className="py-8 lg:py-12">
+      <div className="container space-y-6">
+        <div style={{ animation: "fade-up 0.5s ease-out forwards" }}>
+          <h1 className="text-3xl font-display font-bold">Building Intelligence Centre</h1>
+          <p className="text-muted-foreground mt-1">
+            Visual floor plan and lease portfolio overview.
           </p>
         </div>
         <SummaryBar />

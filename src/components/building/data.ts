@@ -151,21 +151,18 @@ export const unitsByFloor: Record<Floor, Unit[]> = {
   "3": [],
 };
 
-export const STATUS_COLORS: Record<Status, string> = {
-  green: "#059669",
-  amber: "#D97706",
-  red: "#E11D48",
-  grey: "#64748B",
+// Status colors map to design tokens (resolved via CSS vars) for SVG use.
+// hsl(var(--token)) works inside inline style fills.
+export const STATUS_FILL: Record<Status, string> = {
+  green: "hsl(var(--success))",
+  amber: "hsl(var(--warning))",
+  red: "hsl(var(--destructive))",
+  grey: "hsl(var(--muted-foreground))",
 };
 
-export const STATUS_DOT_LABEL: Record<Status, { dot: string; emoji: string }> = {
-  green: { dot: "#059669", emoji: "🟢" },
-  amber: { dot: "#D97706", emoji: "🟡" },
-  red: { dot: "#E11D48", emoji: "🔴" },
-  grey: { dot: "#64748B", emoji: "⬜" },
+export const STATUS_META: Record<Status, { className: string; emoji: string; label: string }> = {
+  green: { className: "text-success", emoji: "🟢", label: "Secure" },
+  amber: { className: "text-warning", emoji: "🟡", label: "Watch" },
+  red: { className: "text-destructive", emoji: "🔴", label: "Critical" },
+  grey: { className: "text-muted-foreground", emoji: "⬜", label: "Vacant" },
 };
-
-export const TEAL = "#0891B2";
-export const BG = "#0D1B2A";
-export const CARD = "#162032";
-export const ATRIUM = "#1E293B";

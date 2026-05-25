@@ -1,4 +1,4 @@
-import { CARD } from "./data";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Metric {
   label: string;
@@ -17,21 +17,22 @@ const metrics: Metric[] = [
 ];
 
 const toneColor = (t?: Metric["tone"]) =>
-  t === "amber" ? "text-[#F59E0B]" : t === "red" ? "text-[#F43F5E]" : "text-white";
+  t === "amber" ? "text-warning" : t === "red" ? "text-destructive" : "text-foreground";
 
 export function SummaryBar() {
   return (
-    <div
-      className="rounded-xl border border-white/5 px-6 py-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6"
-      style={{ background: CARD }}
-    >
-      {metrics.map((m) => (
-        <div key={m.label} className="flex flex-col gap-1">
-          <span className="text-xs uppercase tracking-wide text-slate-400">{m.label}</span>
-          <span className={`text-xl font-semibold ${toneColor(m.tone)}`}>{m.value}</span>
-          {m.sub && <span className="text-xs text-slate-400">{m.sub}</span>}
-        </div>
-      ))}
-    </div>
+    <Card className="glass">
+      <CardContent className="px-6 py-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        {metrics.map((m) => (
+          <div key={m.label} className="flex flex-col gap-1">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">{m.label}</span>
+            <span className={`text-xl font-display font-bold tracking-tight ${toneColor(m.tone)}`}>
+              {m.value}
+            </span>
+            {m.sub && <span className="text-xs text-muted-foreground">{m.sub}</span>}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

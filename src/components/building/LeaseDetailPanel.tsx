@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
-import { CARD, STATUS_DOT_LABEL, TEAL, Unit } from "./data";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { STATUS_META, Unit } from "./data";
 
 interface Props {
   unit: Unit;
@@ -10,17 +12,18 @@ const SourceLink = ({ children }: { children: React.ReactNode }) => (
   <a
     href="#"
     onClick={(e) => e.preventDefault()}
-    className="text-[11px] hover:underline ml-1"
-    style={{ color: TEAL }}
+    className="text-[11px] text-primary hover:underline ml-1"
   >
     {children}
   </a>
 );
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="border-t border-white/5 pt-4 first:border-t-0 first:pt-0">
-    <h3 className="text-[11px] uppercase tracking-wider text-slate-400 mb-2">{title}</h3>
-    <div className="space-y-1.5 text-sm text-slate-200">{children}</div>
+  <div className="border-t border-border pt-4 first:border-t-0 first:pt-0">
+    <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2 font-semibold">
+      {title}
+    </h3>
+    <div className="space-y-1.5 text-sm text-foreground">{children}</div>
   </div>
 );
 
@@ -34,39 +37,34 @@ const Field = ({
   source?: string;
 }) => (
   <div className="flex flex-wrap items-baseline gap-x-2">
-    <span className="text-slate-400 text-xs w-32 shrink-0">{label}</span>
-    <span className="text-slate-100">{value}</span>
+    <span className="text-muted-foreground text-xs w-32 shrink-0">{label}</span>
+    <span className="text-foreground">{value}</span>
     {source && <SourceLink>Source: {source}</SourceLink>}
   </div>
 );
 
 export function LeaseDetailPanel({ unit, onClose }: Props) {
-  const meta = STATUS_DOT_LABEL[unit.status];
+  const meta = STATUS_META[unit.status];
   const isCafe = unit.id === "2-B1";
 
   return (
-    <div
-      className="rounded-xl border border-white/5 h-full flex flex-col overflow-hidden animate-in fade-in duration-200"
-      style={{ background: CARD }}
-    >
-      <div className="px-5 py-4 border-b border-white/5 flex items-start justify-between">
+    <Card className="glass h-full flex flex-col overflow-hidden animate-in fade-in duration-200">
+      <div className="px-5 py-4 border-b border-border flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-white">{unit.tenant}</h2>
-            <span
-              className="text-xs px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(255,255,255,0.06)", color: "white" }}
-            >
-              {meta.emoji} {unit.statusLabel}
-            </span>
+            <h2 className="text-lg font-display font-bold tracking-tight">{unit.tenant}</h2>
+            <Badge variant="secondary" className={`gap-1 ${meta.className}`}>
+              <span>{meta.emoji}</span>
+              {unit.statusLabel}
+            </Badge>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Unit {unit.id} · Floor 2 · GLA {unit.sqm.toLocaleString()} sqm
           </p>
         </div>
         <button
           onClick={onClose}
-          className="rounded-md p-1.5 hover:bg-white/5 text-slate-300"
+          className="rounded-md p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
@@ -98,7 +96,7 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
               <Field
                 label="Status"
                 value={
-                  <span className="text-[#F59E0B]">
+                  <span className="text-warning">
                     ⚠️ Notice window opens 01 Jan 2026
                   </span>
                 }
@@ -113,7 +111,7 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
               <Field
                 label="Status"
                 value={
-                  <span className="text-[#F43F5E]">
+                  <span className="text-destructive">
                     🔴 Renewal required — expires before lease end
                   </span>
                 }
@@ -134,17 +132,20 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
 
             <Section title="Documents">
               <ul className="space-y-1.5 text-sm">
-                <li className="text-slate-200">
-                  <span className="text-[#0891B2]">Base Lease</span> — 01 Jul 2021
-                  <span className="text-slate-400"> (387 pages)</span>
+                <li>
+                  <a href="#" onClick={(e) => e.preventDefault()} className="text-primary hover:underline">Base Lease</a>
+                  <span className="text-foreground"> — 01 Jul 2021</span>
+                  <span className="text-muted-foreground"> (387 pages)</span>
                 </li>
-                <li className="text-slate-200">
-                  <span className="text-[#0891B2]">Annex 1</span> — Fit-out specification — 15 Sep
-                  2021 <span className="text-slate-400">(42 pages)</span>
+                <li>
+                  <a href="#" onClick={(e) => e.preventDefault()} className="text-primary hover:underline">Annex 1</a>
+                  <span className="text-foreground"> — Fit-out specification — 15 Sep 2021</span>
+                  <span className="text-muted-foreground"> (42 pages)</span>
                 </li>
-                <li className="text-slate-200">
-                  <span className="text-[#0891B2]">Annex 2</span> — Rent-free amendment — 03 Jan
-                  2022 <span className="text-slate-400">(6 pages)</span>
+                <li>
+                  <a href="#" onClick={(e) => e.preventDefault()} className="text-primary hover:underline">Annex 2</a>
+                  <span className="text-foreground"> — Rent-free amendment — 03 Jan 2022</span>
+                  <span className="text-muted-foreground"> (6 pages)</span>
                 </li>
               </ul>
             </Section>
@@ -159,12 +160,12 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
               <Field label="Expiry" value={unit.expiry ?? "—"} />
               <Field label="WAULT" value={unit.wault} />
             </Section>
-            <p className="text-xs text-slate-500 italic">
+            <p className="text-xs text-muted-foreground italic">
               Detailed lease data not yet ingested for this unit.
             </p>
           </>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
