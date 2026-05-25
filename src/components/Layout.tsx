@@ -22,7 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Building2 className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-display text-lg font-bold tracking-tight">
-              Lease<span className="text-primary">IQ</span>
+              Lease<span className="text-primary">OS</span>
             </span>
           </Link>
 
@@ -54,7 +54,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <footer className="border-t bg-muted/30 py-8">
         <div className="container text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} LeaseIQ — AI-Powered Lease Intelligence
+          © {new Date().getFullYear()} LeaseOS — AI-Powered Lease Intelligence
         </div>
       </footer>
     </div>
