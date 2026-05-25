@@ -20,15 +20,18 @@ function UnitShape({
 }) {
   const fill = STATUS_FILL[unit.status];
   const isVacant = unit.status === "grey";
-  const innerW = unit.w - 16;
-  const tenantFs = unit.w < 110 ? 10 : 12;
-  const charW = tenantFs * 0.6;
+  const narrow = unit.w < 95;
+  const innerW = unit.w - 12;
+  const tenantFs = unit.w < 110 ? (unit.w < 80 ? 9 : 10) : 12;
+  const charW = tenantFs * 0.58;
   const fitsOneLine = unit.tenant.length * charW <= innerW;
   const words = unit.tenant.split(" ");
   const wrap = !fitsOneLine && words.length > 1;
   const line1 = wrap ? words[0] : unit.tenant;
   const line2 = wrap ? words.slice(1).join(" ") : "";
   const metaFs = unit.w < 110 ? 9 : 10;
+  const showWault = !isVacant && !narrow;
+  const showAlert = !!unit.alert && !narrow;
   return (
     <g
       onClick={onClick}
@@ -80,7 +83,7 @@ function UnitShape({
       >
         {unit.sqm.toLocaleString()} sqm
       </text>
-      {!isVacant && (
+      {showWault && (
         <text
           x={unit.x + unit.w - 8}
           y={unit.y + unit.h - 8}
@@ -92,7 +95,7 @@ function UnitShape({
           {unit.wault}
         </text>
       )}
-      {unit.alert && (
+      {showAlert && (
         <g transform={`translate(${unit.x + unit.w - 14}, ${unit.y + 16})`}>
           <circle cx={0} cy={0} r={8} fill={fill} />
           <path
