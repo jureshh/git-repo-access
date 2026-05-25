@@ -1,5 +1,6 @@
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ATRIUM, BG, CARD, FLOORS, Floor, STATUS_COLORS, TEAL, Unit, unitsByFloor } from "./data";
+import { FLOORS, Floor, STATUS_FILL, Unit, unitsByFloor } from "./data";
 
 interface Props {
   floor: Floor;
@@ -17,11 +18,14 @@ function UnitShape({
   selected: boolean;
   onClick: () => void;
 }) {
-  const fill = STATUS_COLORS[unit.status];
+  const fill = STATUS_FILL[unit.status];
   return (
     <g
       onClick={onClick}
-      style={{ cursor: "pointer", filter: selected ? "drop-shadow(0 0 8px #0891B2)" : undefined }}
+      style={{
+        cursor: "pointer",
+        filter: selected ? "drop-shadow(0 0 10px hsl(var(--primary)))" : undefined,
+      }}
     >
       <rect
         x={unit.x}
@@ -30,8 +34,8 @@ function UnitShape({
         height={unit.h}
         rx={6}
         fill={fill}
-        fillOpacity={unit.status === "grey" ? 0.5 : 0.85}
-        stroke={selected ? TEAL : "rgba(255,255,255,0.08)"}
+        fillOpacity={unit.status === "grey" ? 0.35 : 0.9}
+        stroke={selected ? "hsl(var(--primary))" : "rgba(255,255,255,0.15)"}
         strokeWidth={selected ? 2.5 : 1}
       />
       <text
@@ -78,17 +82,14 @@ function UnitShape({
 export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }: Props) {
   const units = unitsByFloor[floor];
   return (
-    <div
-      className="rounded-xl border border-white/5 p-4 flex flex-col h-full"
-      style={{ background: CARD }}
-    >
+    <Card className="glass p-4 flex flex-col h-full">
       <Tabs value={floor} onValueChange={(v) => onFloorChange(v as Floor)} className="mb-4">
-        <TabsList className="bg-[#0D1B2A] border border-white/5">
+        <TabsList className="bg-muted/50">
           {FLOORS.map((f) => (
             <TabsTrigger
               key={f}
               value={f}
-              className="data-[state=active]:bg-[#0891B2] data-[state=active]:text-white text-slate-300"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               {f === "GF" ? "GF" : `Floor ${f}`}
             </TabsTrigger>
@@ -96,17 +97,17 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
         </TabsList>
       </Tabs>
 
-      <div className="flex-1 min-h-0 rounded-lg overflow-hidden" style={{ background: BG }}>
+      <div className="flex-1 min-h-0 rounded-lg overflow-hidden bg-sidebar-background">
         <svg viewBox="0 0 800 500" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-          <rect x={0} y={0} width={800} height={500} fill={BG} />
+          <rect x={0} y={0} width={800} height={500} fill="hsl(var(--sidebar-background))" />
           {/* Common area */}
-          <rect x={220} y={20} width={390} height={330} rx={8} fill={ATRIUM} />
-          <text x={415} y={190} fill="rgba(255,255,255,0.35)" fontSize={14} textAnchor="middle">
+          <rect x={220} y={20} width={390} height={330} rx={8} fill="hsl(var(--sidebar-accent))" />
+          <text x={415} y={190} fill="rgba(255,255,255,0.4)" fontSize={14} textAnchor="middle">
             Common Area
           </text>
 
           {units.length === 0 ? (
-            <text x={400} y={260} fill="rgba(255,255,255,0.4)" fontSize={16} textAnchor="middle">
+            <text x={400} y={260} fill="rgba(255,255,255,0.5)" fontSize={16} textAnchor="middle">
               No unit data for this floor
             </text>
           ) : (
@@ -122,13 +123,13 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
         </svg>
       </div>
 
-      <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
-        <LegendDot color={STATUS_COLORS.green} label="Secure" />
-        <LegendDot color={STATUS_COLORS.amber} label="Watch" />
-        <LegendDot color={STATUS_COLORS.red} label="Critical" />
-        <LegendDot color={STATUS_COLORS.grey} label="Vacant" />
+      <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+        <LegendDot color={STATUS_FILL.green} label="Secure" />
+        <LegendDot color={STATUS_FILL.amber} label="Watch" />
+        <LegendDot color={STATUS_FILL.red} label="Critical" />
+        <LegendDot color={STATUS_FILL.grey} label="Vacant" />
       </div>
-    </div>
+    </Card>
   );
 }
 
