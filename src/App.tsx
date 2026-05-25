@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import UploadPage from "./pages/UploadPage";
 import Dashboard from "./pages/Dashboard";
 import BuildingIntelligence from "./pages/BuildingIntelligence";
+import LeaseReview from "./pages/LeaseReview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/building" element={<BuildingIntelligence />} />
+            <Route path="/lease-review" element={<LeaseReview />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
