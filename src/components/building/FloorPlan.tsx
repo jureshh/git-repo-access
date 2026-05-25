@@ -20,6 +20,15 @@ function UnitShape({
 }) {
   const fill = STATUS_FILL[unit.status];
   const isVacant = unit.status === "grey";
+  const innerW = unit.w - 16;
+  const tenantFs = unit.w < 110 ? 10 : 12;
+  const charW = tenantFs * 0.6;
+  const fitsOneLine = unit.tenant.length * charW <= innerW;
+  const words = unit.tenant.split(" ");
+  const wrap = !fitsOneLine && words.length > 1;
+  const line1 = wrap ? words[0] : unit.tenant;
+  const line2 = wrap ? words.slice(1).join(" ") : "";
+  const metaFs = unit.w < 110 ? 9 : 10;
   return (
     <g
       onClick={onClick}
@@ -50,15 +59,25 @@ function UnitShape({
         fillOpacity={isVacant ? 0.4 : 1}
       />
       <text
-        x={unit.x + 10}
-        y={unit.y + 26}
+        x={unit.x + 8}
+        y={unit.y + 22}
         fill="hsl(var(--foreground))"
-        fontSize={12}
+        fontSize={tenantFs}
         fontWeight={700}
       >
-        {unit.tenant}
+        {line1}
+        {wrap && (
+          <tspan x={unit.x + 8} dy={tenantFs + 2}>
+            {line2}
+          </tspan>
+        )}
       </text>
-      <text x={unit.x + 10} y={unit.y + 42} fill="hsl(var(--muted-foreground))" fontSize={10}>
+      <text
+        x={unit.x + 8}
+        y={unit.y + (wrap ? 22 + (tenantFs + 2) + 14 : 38)}
+        fill="hsl(var(--muted-foreground))"
+        fontSize={metaFs}
+      >
         {unit.sqm.toLocaleString()} sqm
       </text>
       {!isVacant && (
@@ -66,7 +85,7 @@ function UnitShape({
           x={unit.x + unit.w - 8}
           y={unit.y + unit.h - 8}
           fill={fill}
-          fontSize={10}
+          fontSize={metaFs}
           fontWeight={600}
           textAnchor="end"
         >
@@ -74,7 +93,7 @@ function UnitShape({
         </text>
       )}
       {unit.alert && (
-        <g transform={`translate(${unit.x + unit.w - 18}, ${unit.y + 14})`}>
+        <g transform={`translate(${unit.x + unit.w - 14}, ${unit.y + 16})`}>
           <circle cx={0} cy={0} r={8} fill={fill} />
           <path
             d="M-3 -3 a3 3 0 0 1 6 0 v2 l1 2 h-8 l1 -2 z M-1.5 2 a1.5 1.5 0 0 0 3 0"
@@ -86,7 +105,7 @@ function UnitShape({
         </g>
       )}
       <text
-        x={unit.x + 10}
+        x={unit.x + 8}
         y={unit.y + unit.h - 8}
         fill="hsl(var(--muted-foreground))"
         fontSize={9}
@@ -128,7 +147,7 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
         <svg
           viewBox="0 0 900 480"
           className="w-full h-full"
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="xMidYMin meet"
         >
           <defs>
             <pattern
