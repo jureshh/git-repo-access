@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Building2, LayoutDashboard, LayoutGrid, Upload, FileSearch } from "lucide-react";
+import { Building2, LayoutDashboard, LayoutGrid, Upload, FileSearch, Users } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Home", icon: Building2 },
   { to: "/upload", label: "Upload", icon: Upload },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/building", label: "Building", icon: LayoutGrid },
+  { to: "/tenant-intelligence", label: "Tenant Intelligence", icon: Users, badge: "7" },
   { to: "/lease-review", label: "Lease Review", icon: FileSearch },
 ];
 
@@ -40,6 +41,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 <item.icon className="h-4 w-4" />
                 {item.label}
+                {item.badge && (
+                  <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
