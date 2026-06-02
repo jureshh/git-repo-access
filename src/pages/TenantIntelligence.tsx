@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { FileText, ArrowRight, Download, Settings2, ChevronDown } from "lucide-react";
+import { FileText, ArrowRight, Download, Settings2, ChevronDown, CheckCircle2, Clock } from "lucide-react";
 
 type PillTone = "green" | "amber" | "red" | "grey" | "purple";
 
