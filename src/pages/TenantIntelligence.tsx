@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Clock, FileWarning, FileText, TrendingDown, ShieldAlert, ArrowRight, Download, Settings2 } from "lucide-react";
+import { AlertTriangle, Clock, FileWarning, FileText, TrendingDown, ShieldAlert, ArrowRight, Download, Settings2, Search, GitBranch } from "lucide-react";
 
 type PillTone = "green" | "amber" | "red" | "grey" | "purple";
 
@@ -32,6 +35,7 @@ interface RiskRow {
   brk: Cell;
   idx: Cell;
   docs: Cell;
+  amd: Cell;
   grt: Cell;
   score: string;
   scoreTone: RowTone;
@@ -41,22 +45,27 @@ const riskRows: RiskRow[] = [
   { border: "red", emoji: "🔴", name: "Kraków – Galeria Bronowice",
     sc: { tone: "red", text: "23% vs 8% cap" }, brk: { tone: "amber", text: "Closing Jul '26" },
     idx: { tone: "red", text: "+4.2% drift" }, docs: { tone: "red", text: "Missing POA" },
+    amd: { tone: "red", text: "Conflict §6 vs Amdt 2" },
     grt: { tone: "amber", text: "Exp. Sep 2026" }, score: "9/10", scoreTone: "red" },
   { border: "red", emoji: "🔴", name: "Warszawa – Westfield Mokotów",
     sc: { tone: "purple", text: "No cap clause" }, brk: { tone: "green", text: "Opens Oct '26" },
     idx: { tone: "amber", text: "HICP vs CPI" }, docs: { tone: "green", text: "Complete" },
+    amd: { tone: "red", text: "Cap removed Amdt 3" },
     grt: { tone: "red", text: "Expired" }, score: "8/10", scoreTone: "red" },
   { border: "amber", emoji: "🟡", name: "Gdańsk – Forum Gdańsk",
     sc: { tone: "amber", text: "12% cap" }, brk: { tone: "green", text: "Open now" },
     idx: { tone: "green", text: "Normal" }, docs: { tone: "green", text: "Complete" },
+    amd: { tone: "green", text: "Reconciled" },
     grt: { tone: "green", text: "Valid 2028" }, score: "6/10", scoreTone: "amber" },
   { border: "amber", emoji: "🟡", name: "Wrocław – Magnolia Park",
     sc: { tone: "green", text: "8% cap" }, brk: { tone: "grey", text: "No break" },
     idx: { tone: "amber", text: "2.1% drift" }, docs: { tone: "amber", text: "Missing annex" },
-    grt: { tone: "green", text: "Valid 2027" }, score: "5/10", scoreTone: "amber" },
+    amd: { tone: "amber", text: "Amdt 4 unlinked" },
+    grt: { tone: "green", text: "Valid 2027" }, score: "6/10", scoreTone: "amber" },
   { border: "green", emoji: "🟢", name: "Poznań – Galeria Malta",
     sc: { tone: "green", text: "7% cap" }, brk: { tone: "green", text: "Mar 2027" },
     idx: { tone: "green", text: "Normal" }, docs: { tone: "green", text: "Complete" },
+    amd: { tone: "green", text: "Reconciled" },
     grt: { tone: "green", text: "Valid 2028" }, score: "2/10", scoreTone: "green" },
 ];
 
@@ -127,6 +136,8 @@ interface Anomaly {
   source: string;
   recovery?: string;
   exposure?: string;
+  effective?: { label: string; value: string; valueTone: "amber" | "red" };
+  note?: string;
 }
 
 const anomalies: Anomaly[] = [
@@ -136,6 +147,16 @@ const anomalies: Anomaly[] = [
   { tone: "red", store: "Warszawa – Westfield Mokotów", type: "No Enforceable Cap Clause", icon: AlertTriangle,
     desc: "Amendment 3 removed the cap reference. Ambiguous drafting — requires legal review before next service charge reconciliation.",
     source: "→ Amendment 3, §6.1", exposure: "Exposure: PLN 290,000/yr" },
+  { tone: "red", store: "Kraków – Galeria Bronowice", type: "⚠ Amendment Conflict — Effective Terms Unclear", icon: GitBranch,
+    desc: "Base lease §6.1 sets service charge cap at 8%. Amendment 2 §3.4 introduces a new calculation basis that contradicts the original cap. Current effective obligation is legally ambiguous.",
+    effective: { label: "Current effective term:", value: "Disputed — requires legal review", valueTone: "amber" },
+    source: "→ §6.1 Base Lease p.14 conflicts with Amendment 2 §3.4 p.6",
+    recovery: "Dispute exposure: PLN 210,000" },
+  { tone: "red", store: "Warszawa – Westfield Mokotów", type: "🔍 Related-Party Pattern Detected", icon: Search,
+    desc: "Lease term is 12 years — 4.1 years above portfolio average of 7.9 years. Lessor entity shares a registered address with a former company director. Recommend authority and conflict-of-interest review.",
+    effective: { label: "Lease term vs portfolio avg:", value: "12 yrs vs 7.9 yrs avg (+51%)", valueTone: "red" },
+    source: "→ §2.1 Lease Term — KRS registry cross-reference",
+    note: "Flagged for governance review" },
   { tone: "amber", store: "Gdańsk – Forum Gdańsk", type: "Break Option Closing in 45 Days", icon: Clock,
     desc: "Exercise window closes 15 Jul 2026. Notice period is 90 days. Serve notice by 15 Jul or locked until 2029.",
     source: "→ §18.2 — Base Lease, p. 31" },
