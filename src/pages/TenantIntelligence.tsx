@@ -347,6 +347,13 @@ export default function TenantIntelligence() {
         source: "→ §9.1 Indexation clause (Wrocław) · §9.1 Indexation clause (Katowice)",
         recovery: "Recoverable: PLN 134,000",
       });
+    } else if (s.includes("bank guarantee") || s.includes("missing bank guarantees") || s.includes("guarantee expired") || s.includes("guarantee")) {
+      setAnswer({
+        header: "2 locations have expired or at-risk bank guarantees",
+        body: "Warszawa – Westfield Mokotów: guarantee of PLN 450,000 expired January 2026. Landlord has not been notified. Contractual obligation is unmet — this creates a potential default position. Kraków – Galeria Bronowice: guarantee of PLN 54,000 expires September 2026, before lease end date of June 2027. Renewal has not been initiated. Lease requires renewal no later than 30 days prior to expiry.",
+        source: "→ §22.1 — Base Lease, p. 44 (Warszawa) · §14.1 — Base Lease, p. 38 (Kraków)",
+        recovery: "Combined guarantee exposure: PLN 504,000",
+      });
     } else {
       setAnswer({
         header: "Searching your portfolio...",
