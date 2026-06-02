@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Clock, FileWarning, FileText, TrendingDown, ShieldAlert, ArrowRight, Download, Settings2, Search, GitBranch } from "lucide-react";
+import { FileText, ArrowRight, Download, Settings2, ChevronDown } from "lucide-react";
 
 type PillTone = "green" | "amber" | "red" | "grey" | "purple";
 
@@ -131,7 +131,6 @@ interface Anomaly {
   tone: AnomalyTone;
   store: string;
   type: string;
-  icon: React.ComponentType<{ className?: string }>;
   desc: string;
   source: string;
   recovery?: string;
@@ -140,39 +139,161 @@ interface Anomaly {
   note?: string;
 }
 
-const anomalies: Anomaly[] = [
-  { tone: "red", store: "Kraków – Galeria Bronowice", type: "Service Charge Cap Breach", icon: AlertTriangle,
-    desc: "Landlord invoiced 23% increase. Lease cap is 8% per annum. Excess: PLN 184,000 this year.",
-    source: "→ §12.4 — Base Lease, p. 23, Annex B", recovery: "Recoverable: PLN 184,000" },
-  { tone: "red", store: "Warszawa – Westfield Mokotów", type: "No Enforceable Cap Clause", icon: AlertTriangle,
-    desc: "Amendment 3 removed the cap reference. Ambiguous drafting — requires legal review before next service charge reconciliation.",
-    source: "→ Amendment 3, §6.1", exposure: "Exposure: PLN 290,000/yr" },
-  { tone: "red", store: "Kraków – Galeria Bronowice", type: "⚠ Amendment Conflict — Effective Terms Unclear", icon: GitBranch,
-    desc: "Base lease §6.1 sets service charge cap at 8%. Amendment 2 §3.4 introduces a new calculation basis that contradicts the original cap. Current effective obligation is legally ambiguous.",
-    effective: { label: "Current effective term:", value: "Disputed — requires legal review", valueTone: "amber" },
-    source: "→ §6.1 Base Lease p.14 conflicts with Amendment 2 §3.4 p.6",
-    recovery: "Dispute exposure: PLN 210,000" },
-  { tone: "red", store: "Warszawa – Westfield Mokotów", type: "🔍 Related-Party Pattern Detected", icon: Search,
-    desc: "Lease term is 12 years — 4.1 years above portfolio average of 7.9 years. Lessor entity shares a registered address with a former company director. Recommend authority and conflict-of-interest review.",
-    effective: { label: "Lease term vs portfolio avg:", value: "12 yrs vs 7.9 yrs avg (+51%)", valueTone: "red" },
-    source: "→ §2.1 Lease Term — KRS registry cross-reference",
-    note: "Flagged for governance review" },
-  { tone: "amber", store: "Gdańsk – Forum Gdańsk", type: "Break Option Closing in 45 Days", icon: Clock,
-    desc: "Exercise window closes 15 Jul 2026. Notice period is 90 days. Serve notice by 15 Jul or locked until 2029.",
-    source: "→ §18.2 — Base Lease, p. 31" },
-  { tone: "amber", store: "Wrocław – Magnolia Park", type: "Indexation Drift — HICP vs CPI", icon: TrendingDown,
-    desc: "CPI was applied at 6.3%. Contractual index is HICP. Cumulative difference over 3 years = PLN 67,000.",
-    source: "→ §9.1 — Indexation clause", recovery: "Recoverable: PLN 67,000" },
-  { tone: "purple", store: "Warszawa – Westfield Mokotów", type: "Bank Guarantee Expired", icon: ShieldAlert,
-    desc: "Guarantee of PLN 450,000 expired Jan 2026. Landlord has not been notified. Contractual obligation unmet.",
-    source: "→ §22.1 — Base Lease, p. 44" },
-  { tone: "blue", store: "Kraków – Galeria Bronowice", type: "Missing Power of Attorney", icon: FileWarning,
-    desc: "Amendment 2 signed without documented authority. Signatory not listed in KRS extract. Legal validity uncertain.",
-    source: "→ Amendment 2, signature block" },
-  { tone: "amber", store: "Katowice – Silesia City Center", type: "Underperformance vs Feasibility", icon: TrendingDown,
-    desc: "Store turnover is 31% below the feasibility model assumption. Rent renegotiation clause may be triggered.",
-    source: "→ §11.3 — Turnover schedule" },
+interface AnomalySection {
+  id: string;
+  title: string;
+  count: number;
+  rightLabel?: string;
+  rightTone?: "red" | "amber";
+  defaultOpen: boolean;
+  items: Anomaly[];
+}
+
+const anomalySections: AnomalySection[] = [
+  {
+    id: "financial",
+    title: "💰 Financial Recovery",
+    count: 4,
+    rightLabel: "PLN 751,000 at risk",
+    rightTone: "red",
+    defaultOpen: true,
+    items: [
+      { tone: "red", store: "Kraków – Galeria Bronowice", type: "⚠ Service Charge Cap Breach",
+        desc: "Landlord invoiced 23% increase. Lease cap is 8% per annum. Excess: PLN 184,000 this year.",
+        source: "→ §12.4 — Base Lease, p. 23, Annex B", recovery: "Recoverable: PLN 184,000" },
+      { tone: "red", store: "Kraków – Galeria Bronowice", type: "⚠ Amendment Conflict — Effective Terms Unclear",
+        desc: "Base lease §6.1 sets cap at 8%. Amendment 2 §3.4 introduces a contradictory calculation basis. Current obligation is legally ambiguous.",
+        effective: { label: "Current effective term:", value: "Disputed — requires legal review", valueTone: "amber" },
+        source: "→ §6.1 Base Lease p.14 conflicts with Amendment 2 §3.4 p.6",
+        exposure: "Dispute exposure: PLN 210,000" },
+      { tone: "red", store: "Warszawa – Westfield Mokotów", type: "⚠ No Enforceable Cap Clause",
+        desc: "Amendment 3 removed the cap reference. Ambiguous drafting — requires legal review before next service charge reconciliation.",
+        source: "→ Amendment 3, §6.1", exposure: "Exposure: PLN 290,000/yr" },
+      { tone: "amber", store: "Wrocław – Magnolia Park", type: "📊 Indexation Drift — HICP vs CPI",
+        desc: "CPI applied at 6.3%. Contractual index is HICP. Cumulative difference over 3 years = PLN 67,000.",
+        source: "→ §9.1 — Indexation clause", recovery: "Recoverable: PLN 67,000" },
+    ],
+  },
+  {
+    id: "deadline",
+    title: "⏰ Deadline — Action Required",
+    count: 2,
+    rightLabel: "45 days or less",
+    rightTone: "amber",
+    defaultOpen: true,
+    items: [
+      { tone: "amber", store: "Gdańsk – Forum Gdańsk", type: "⏰ Break Option Closing in 45 Days",
+        desc: "Exercise window closes 15 Jul 2026. Notice period is 90 days. Serve notice by 15 Jul or locked until 2029.",
+        source: "→ §18.2 — Base Lease, p. 31" },
+      { tone: "amber", store: "Kraków – Galeria Bronowice", type: "⏰ Guarantee Renewal — Expires Sep 2026",
+        desc: "Bank guarantee expires September 2026 — before lease end. Renewal must be initiated now to avoid contractual breach.",
+        source: "→ §14.1 — Base Lease, p. 38" },
+    ],
+  },
+  {
+    id: "legal",
+    title: "⚖️ Legal & Document",
+    count: 3,
+    defaultOpen: false,
+    items: [
+      { tone: "blue", store: "Kraków – Galeria Bronowice", type: "📄 Missing Power of Attorney",
+        desc: "Amendment 2 signed without documented authority. Signatory not listed in KRS extract. Legal validity uncertain.",
+        source: "→ Amendment 2, signature block" },
+      { tone: "blue", store: "Warszawa – Westfield Mokotów", type: "📋 Bank Guarantee Expired",
+        desc: "Guarantee of PLN 450,000 expired Jan 2026. Landlord has not been notified. Contractual obligation unmet.",
+        source: "→ §22.1 — Base Lease, p. 44" },
+      { tone: "amber", store: "Wrocław – Magnolia Park", type: "📎 Missing Annex",
+        desc: "Annex 4 (service charge schedule) referenced in §12.1 but not present in document set. Current reconciliation basis uncertain.",
+        source: "→ §12.1 — Base Lease, p. 19" },
+    ],
+  },
+  {
+    id: "governance",
+    title: "🔍 Governance & Patterns",
+    count: 2,
+    defaultOpen: false,
+    items: [
+      { tone: "red", store: "Warszawa – Westfield Mokotów", type: "🔍 Related-Party Pattern Detected",
+        desc: "Lease term is 12 years — 4.1 years above portfolio average of 7.9 years. Lessor entity shares a registered address with a former company director.",
+        effective: { label: "Lease term vs portfolio avg:", value: "12 yrs vs 7.9 yrs avg (+51%)", valueTone: "red" },
+        source: "→ §2.1 Lease Term — KRS registry cross-reference",
+        note: "Flagged for governance review" },
+      { tone: "amber", store: "Katowice – Silesia City Center", type: "📉 Underperformance vs Feasibility",
+        desc: "Store turnover is 31% below feasibility model. Rent renegotiation clause may be triggered — check §11.3.",
+        source: "→ §11.3 — Turnover schedule" },
+    ],
+  },
 ];
+
+function AnomalyLegend() {
+  const items: { color: string; text: string }[] = [
+    { color: "#dc2626", text: "Critical — immediate action required" },
+    { color: "#d97706", text: "Warning — review within 30 days" },
+    { color: "#2563eb", text: "Informational — monitor" },
+  ];
+  return (
+    <Card className="px-4 py-2.5">
+      <div className="flex items-center gap-6 flex-wrap text-[11px] text-muted-foreground">
+        {items.map((i) => (
+          <span key={i.text} className="inline-flex items-center gap-2">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: i.color }} />
+            {i.text}
+          </span>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function AnomalyGroup({ section }: { section: AnomalySection }) {
+  const [open, setOpen] = useState(section.defaultOpen);
+  return (
+    <Card className="overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] font-bold text-foreground">{section.title}</span>
+          <span className="text-[11px] text-muted-foreground">({section.count})</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {section.rightLabel && (
+            <span className={cn("text-[11px] font-semibold", section.rightTone === "red" ? "text-destructive" : "text-warning")}>
+              {section.rightLabel}
+            </span>
+          )}
+          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", open ? "rotate-0" : "-rotate-90")} />
+        </div>
+      </button>
+      {open && (
+        <div className="p-4 space-y-3 border-t">
+          {section.items.map((a, i) => (
+            <Card key={i} className={cn("p-4 border-l-4", anomalyBorder[a.tone])}>
+              <div className="space-y-1.5">
+                <p className="font-semibold text-sm text-foreground">{a.store}</p>
+                <p className={cn("text-xs font-bold", anomalyText[a.tone])}>{a.type}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{a.desc}</p>
+                {a.effective && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {a.effective.label}{" "}
+                    <span className={cn("font-bold", a.effective.valueTone === "amber" ? "text-warning" : "text-destructive")}>
+                      {a.effective.value}
+                    </span>
+                  </p>
+                )}
+                <p className="text-[11px] italic text-primary">{a.source}</p>
+                {a.recovery && <p className="text-xs font-bold text-success">{a.recovery}</p>}
+                {a.exposure && <p className="text-xs font-bold text-destructive">{a.exposure}</p>}
+                {a.note && <p className="text-[11px] italic text-muted-foreground">{a.note}</p>}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
 
 const anomalyBorder: Record<AnomalyTone, string> = {
   red: "border-l-destructive",
@@ -252,7 +373,7 @@ export default function TenantIntelligence() {
             <SummaryItem label="Portfolio WAULT" value="3.8 yrs" tone="teal" />
             <SummaryItem label="Service Charge Excess" value="PLN 1.34M" sub="vs cap provisions" tone="red" />
             <SummaryItem label="Break Options Open" value="9" sub="next 6 months" tone="amber" />
-            <SummaryItem label="Anomalies Detected" value="23" sub="7 critical" tone="red" />
+            <SummaryItem label="Anomalies Detected" value="23" sub="9 critical" tone="red" />
           </div>
         </Card>
 
@@ -415,41 +536,20 @@ export default function TenantIntelligence() {
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-lg font-display font-bold">Anomaly Feed</h2>
               <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold">23</span>
-              <div className="flex gap-2 ml-2">
-                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-destructive/15 text-destructive cursor-pointer">Critical (9)</span>
-                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80">Amber (11)</span>
-                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80">Info (5)</span>
-              </div>
+            </div>
+
+            <AnomalyLegend />
+
+            <div className="flex gap-2 flex-wrap">
+              <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-destructive/15 text-destructive cursor-pointer">Critical (9)</span>
+              <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80">Amber (11)</span>
+              <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80">Info (5)</span>
             </div>
 
             <div className="space-y-3">
-              {anomalies.map((a, i) => {
-                const Icon = a.icon;
-                return (
-                  <Card key={i} className={cn("p-4 border-l-4", anomalyBorder[a.tone])}>
-                    <div className="space-y-1.5">
-                      <p className="font-semibold text-sm text-foreground">{a.store}</p>
-                      <p className={cn("text-xs font-bold inline-flex items-center gap-1.5", anomalyText[a.tone])}>
-                        <Icon className="h-3.5 w-3.5" />
-                        {a.type}
-                      </p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{a.desc}</p>
-                      {a.effective && (
-                        <p className="text-[11px] text-muted-foreground">
-                          {a.effective.label}{" "}
-                          <span className={cn("font-bold", a.effective.valueTone === "amber" ? "text-warning" : "text-destructive")}>
-                            {a.effective.value}
-                          </span>
-                        </p>
-                      )}
-                      <p className="text-[11px] italic text-primary">{a.source}</p>
-                      {a.recovery && <p className="text-xs font-bold text-success">{a.recovery}</p>}
-                      {a.exposure && <p className="text-xs font-bold text-destructive">{a.exposure}</p>}
-                      {a.note && <p className="text-[11px] italic text-muted-foreground">{a.note}</p>}
-                    </div>
-                  </Card>
-                );
-              })}
+              {anomalySections.map((s) => (
+                <AnomalyGroup key={s.id} section={s} />
+              ))}
             </div>
           </div>
 
