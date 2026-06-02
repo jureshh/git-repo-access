@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Building2, LayoutDashboard, LayoutGrid, Upload, FileSearch, Users } from "lucide-react";
+import { Building2, LayoutDashboard, LayoutGrid, Upload, FileSearch, Users, Search } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Home", icon: Building2 },
@@ -8,6 +8,7 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/building", label: "Building", icon: LayoutGrid },
   { to: "/tenant-intelligence", label: "Tenant Intelligence", icon: Users, badge: "9" },
+  { to: "/investigations", label: "Investigations", icon: Search },
   { to: "/lease-review", label: "Lease Review", icon: FileSearch },
 ];
 
