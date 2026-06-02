@@ -322,7 +322,7 @@ function SummaryItem({ label, value, sub, tone }: { label: string; value: string
 export default function TenantIntelligence() {
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [answer, setAnswer] = useState<null | { header: string; body: string; source?: string; recovery?: string; bodyMuted?: boolean }>(null);
+  const [answer, setAnswer] = useState<null | { header: string; body: string; source?: string; recovery?: string; exposure?: string; bodyMuted?: boolean }>(null);
 
   const runQuery = (q: string) => {
     const s = q.toLowerCase().trim();
@@ -346,6 +346,13 @@ export default function TenantIntelligence() {
         body: "Wrocław – Magnolia Park: CPI applied at 6.3%, contractual index is HICP. Cumulative drift over 3 years = PLN 67,000. Katowice – Silesia City Center: indexation review date missed Sep 2025 — no adjustment applied. Estimated under-recovery: PLN 67,000.",
         source: "→ §9.1 Indexation clause (Wrocław) · §9.1 Indexation clause (Katowice)",
         recovery: "Recoverable: PLN 134,000",
+      });
+    } else if (s.includes("bank guarantee") || s.includes("missing bank guarantees") || s.includes("guarantee expired") || s.includes("guarantee")) {
+      setAnswer({
+        header: "2 locations have expired or at-risk bank guarantees",
+        body: "Warszawa – Westfield Mokotów: guarantee of PLN 450,000 expired January 2026. Landlord has not been notified. Contractual obligation is unmet — this creates a potential default position. Kraków – Galeria Bronowice: guarantee of PLN 54,000 expires September 2026, before lease end date of June 2027. Renewal has not been initiated. Lease requires renewal no later than 30 days prior to expiry.",
+        source: "→ §22.1 — Base Lease, p. 44 (Warszawa) · §14.1 — Base Lease, p. 38 (Kraków)",
+        exposure: "Combined guarantee exposure: PLN 504,000",
       });
     } else {
       setAnswer({
@@ -599,6 +606,7 @@ export default function TenantIntelligence() {
                   </p>
                   {answer.source && <p className="text-[11px] italic text-primary">{answer.source}</p>}
                   {answer.recovery && <p className="text-xs font-bold text-success">{answer.recovery}</p>}
+                  {answer.exposure && <p className="text-xs font-bold text-destructive">{answer.exposure}</p>}
                 </Card>
               )}
 
