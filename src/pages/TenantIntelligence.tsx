@@ -258,6 +258,12 @@ function AnomalyLegend() {
   );
 }
 
+function confidenceBarColor(v: number): string {
+  if (v >= 85) return "#10b981";
+  if (v >= 70) return "#d97706";
+  return "#ef4444";
+}
+
 function AnomalyGroup({ section }: { section: AnomalySection }) {
   const [open, setOpen] = useState(section.defaultOpen);
   return (
@@ -295,6 +301,32 @@ function AnomalyGroup({ section }: { section: AnomalySection }) {
                     </span>
                   </p>
                 )}
+                {/* Confidence footer */}
+                <div className="flex items-center justify-between gap-3 pt-2 border-t border-[#f3f4f6]">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                      <span>Extraction confidence</span>
+                      <span className="font-mono font-semibold">{a.confidence}%</span>
+                    </div>
+                    <div className="h-1 rounded-sm bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-sm"
+                        style={{ width: `${a.confidence}%`, backgroundColor: confidenceBarColor(a.confidence) }}
+                      />
+                    </div>
+                  </div>
+                  <div className="shrink-0 pl-2">
+                    {a.reviewed ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success">
+                        <CheckCircle2 className="h-3 w-3" /> Human reviewed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-warning">
+                        <Clock className="h-3 w-3" /> Pending review
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <p className="text-[11px] italic text-primary">{a.source}</p>
                 {a.recovery && <p className="text-xs font-bold text-success">{a.recovery}</p>}
                 {a.exposure && <p className="text-xs font-bold text-destructive">{a.exposure}</p>}
