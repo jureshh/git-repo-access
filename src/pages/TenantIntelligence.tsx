@@ -416,7 +416,7 @@ export default function TenantIntelligence() {
               <h2 className="text-lg font-display font-bold">Anomaly Feed</h2>
               <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold">23</span>
               <div className="flex gap-2 ml-2">
-                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-destructive/15 text-destructive cursor-pointer">Critical (7)</span>
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-destructive/15 text-destructive cursor-pointer">Critical (9)</span>
                 <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80">Amber (11)</span>
                 <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-muted text-muted-foreground cursor-pointer hover:bg-muted/80">Info (5)</span>
               </div>
@@ -434,9 +434,18 @@ export default function TenantIntelligence() {
                         {a.type}
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">{a.desc}</p>
+                      {a.effective && (
+                        <p className="text-[11px] text-muted-foreground">
+                          {a.effective.label}{" "}
+                          <span className={cn("font-bold", a.effective.valueTone === "amber" ? "text-warning" : "text-destructive")}>
+                            {a.effective.value}
+                          </span>
+                        </p>
+                      )}
                       <p className="text-[11px] italic text-primary">{a.source}</p>
                       {a.recovery && <p className="text-xs font-bold text-success">{a.recovery}</p>}
                       {a.exposure && <p className="text-xs font-bold text-destructive">{a.exposure}</p>}
+                      {a.note && <p className="text-[11px] italic text-muted-foreground">{a.note}</p>}
                     </div>
                   </Card>
                 );
@@ -456,8 +465,14 @@ export default function TenantIntelligence() {
               </div>
 
               <div className="flex gap-2">
-                <Input placeholder="e.g. Which stores have no service charge cap?" className="text-sm" />
-                <Button size="default">Ask</Button>
+                <Input
+                  placeholder="e.g. Which stores have no service charge cap?"
+                  className="text-sm"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") runQuery(query); }}
+                />
+                <Button size="default" onClick={() => runQuery(query)}>Ask</Button>
               </div>
 
               <div className="space-y-2">
@@ -469,12 +484,23 @@ export default function TenantIntelligence() {
                     "Missing bank guarantees",
                     "All locations above cap",
                   ].map((q) => (
-                    <button key={q} className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
+                    <button key={q} onClick={() => { setQuery(q); runQuery(q); }} className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
                       {q}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {answer && (
+                <Card className="p-4 space-y-2 bg-background">
+                  <p className="font-semibold text-sm text-foreground">{answer.header}</p>
+                  <p className={cn("text-xs leading-relaxed", answer.bodyMuted ? "italic text-muted-foreground" : "text-muted-foreground")}>
+                    {answer.body}
+                  </p>
+                  {answer.source && <p className="text-[11px] italic text-primary">{answer.source}</p>}
+                  {answer.recovery && <p className="text-xs font-bold text-success">{answer.recovery}</p>}
+                </Card>
+              )}
 
               <p className="text-[11px] italic text-muted-foreground pt-2 border-t">
                 Powered by LeaseOS AI — answers link to source clauses
@@ -483,6 +509,98 @@ export default function TenantIntelligence() {
           </div>
         </div>
       </div>
+      <CustomiseColumnsDialog open={columnsOpen} onOpenChange={setColumnsOpen} />
     </div>
+  );
+}
+
+const COLUMN_GROUPS: { group: string; items: { label: string; active?: boolean }[] }[] = [
+  { group: "Financial", items: [
+    { label: "Service Charge Cap Status", active: true },
+    { label: "Indexation Anomaly", active: true },
+    { label: "Missed Rent Steps" },
+    { label: "Turnover Reporting Compliance" },
+    { label: "CAM Pro-Rata Accuracy" },
+  ]},
+  { group: "Deadlines", items: [
+    { label: "Break Option Window", active: true },
+    { label: "Lease Expiry (<18 months)" },
+    { label: "Renewal Notice Deadline" },
+    { label: "Guarantee Renewal Date" },
+    { label: "Rent Review Date" },
+  ]},
+  { group: "Documents", items: [
+    { label: "Amendment Chain", active: true },
+    { label: "Document Completeness", active: true },
+    { label: "Guarantee Status", active: true },
+    { label: "KRS Authority Match" },
+    { label: "Signatory Verification" },
+  ]},
+  { group: "Commercial & Risk", items: [
+    { label: "Exclusivity Clause Present" },
+    { label: "Co-Tenancy Trigger Risk" },
+    { label: "ROFR / ROFO Tracked" },
+    { label: "Assignment Restrictions" },
+    { label: "Related-Party Flag" },
+    { label: "Fit-Out Reinstatement Clause" },
+  ]},
+];
+
+function CustomiseColumnsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const initial = new Set<string>();
+  COLUMN_GROUPS.forEach((g) => g.items.forEach((i) => { if (i.active) initial.add(i.label); }));
+  const [selected, setSelected] = useState<Set<string>>(initial);
+  const [warn, setWarn] = useState(false);
+
+  const toggle = (label: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+        setWarn(false);
+      } else {
+        if (next.size >= 8) { setWarn(true); return prev; }
+        next.add(label);
+        setWarn(false);
+      }
+      return next;
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display font-bold">Customise Risk Columns</DialogTitle>
+          <DialogDescription>
+            Select up to 8 risk categories to display in the matrix. Changes apply to all locations.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 py-2">
+          {COLUMN_GROUPS.map((g) => (
+            <div key={g.group} className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g.group}</p>
+              <div className="space-y-2">
+                {g.items.map((i) => (
+                  <label key={i.label} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={selected.has(i.label)} onCheckedChange={() => toggle(i.label)} />
+                    <span>{i.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {warn && (
+          <p className="text-xs text-warning">Maximum 8 columns selected.</p>
+        )}
+
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)}>Apply</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
