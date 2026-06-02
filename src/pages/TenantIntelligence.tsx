@@ -199,6 +199,42 @@ function SummaryItem({ label, value, sub, tone }: { label: string; value: string
 }
 
 export default function TenantIntelligence() {
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [answer, setAnswer] = useState<null | { header: string; body: string; source?: string; recovery?: string; bodyMuted?: boolean }>(null);
+
+  const runQuery = (q: string) => {
+    const s = q.toLowerCase().trim();
+    if (!s) { setAnswer(null); return; }
+    if (s.includes("no service charge cap") || s.includes("no cap") || s.includes("above cap")) {
+      setAnswer({
+        header: "3 locations have no enforceable service charge cap",
+        body: "Warszawa – Westfield Mokotów: cap clause removed in Amendment 3. Gdańsk – Forum Gdańsk: cap exists at 12% but base calculation is ambiguous. Kraków – Galeria Bronowice: cap of 8% exists but contradicted by Amendment 2.",
+        source: "→ Sources: Amendment 3 §6.1 · Base Lease §12.4 · Amendment 2 §3.4",
+        recovery: "Combined exposure: PLN 684,000/yr",
+      });
+    } else if (s.includes("break option")) {
+      setAnswer({
+        header: "2 break option windows closing within 90 days",
+        body: "Gdańsk – Forum Gdańsk: window open now, closes 15 Jul 2026 — 43 days remaining. Notice period 90 days — serve notice immediately. Kraków – Galeria Bronowice: 45 days to serve notice or locked until 2029.",
+        source: "→ §18.2 Base Lease p.31 (Gdańsk) · §14.1 Base Lease p.28 (Kraków)",
+      });
+    } else if (s.includes("indexation") || s.includes("hicp") || s.includes("cpi")) {
+      setAnswer({
+        header: "2 locations with indexation anomalies — cumulative exposure PLN 134,000",
+        body: "Wrocław – Magnolia Park: CPI applied at 6.3%, contractual index is HICP. Cumulative drift over 3 years = PLN 67,000. Katowice – Silesia City Center: indexation review date missed Sep 2025 — no adjustment applied. Estimated under-recovery: PLN 67,000.",
+        source: "→ §9.1 Indexation clause (Wrocław) · §9.1 Indexation clause (Katowice)",
+        recovery: "Recoverable: PLN 134,000",
+      });
+    } else {
+      setAnswer({
+        header: "Searching your portfolio...",
+        body: "This query requires live lease data. Connect your lease documents to enable full natural language search across all 104 locations.",
+        bodyMuted: true,
+      });
+    }
+  };
+
   return (
     <div className="py-8 lg:py-12">
       <div className="container space-y-8">
@@ -231,7 +267,7 @@ export default function TenantIntelligence() {
               <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
                 <Download className="h-4 w-4" /> Export Evidence Pack
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setColumnsOpen(true)}>
                 <Settings2 className="h-4 w-4" /> Customise Columns
               </Button>
             </div>
@@ -241,7 +277,7 @@ export default function TenantIntelligence() {
               <table className="w-full text-xs">
                 <thead className="bg-muted/60">
                   <tr className="text-left">
-                    {["Location", "Service Charge Cap", "Break Option", "Indexation", "Documents", "Guarantee", "Risk Score"].map((h) => (
+                    {["Location", "Service Charge Cap", "Break Option", "Indexation", "Documents", "Amendment Chain", "Guarantee", "Risk Score"].map((h) => (
                       <th key={h} className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -258,12 +294,13 @@ export default function TenantIntelligence() {
                       <td className="px-3 py-3"><Pill tone={r.brk.tone}>{r.brk.text}</Pill></td>
                       <td className="px-3 py-3"><Pill tone={r.idx.tone}>{r.idx.text}</Pill></td>
                       <td className="px-3 py-3"><Pill tone={r.docs.tone}>{r.docs.text}</Pill></td>
+                      <td className="px-3 py-3"><Pill tone={r.amd.tone}>{r.amd.text}</Pill></td>
                       <td className="px-3 py-3"><Pill tone={r.grt.tone}>{r.grt.text}</Pill></td>
                       <td className={cn("px-3 py-3 font-bold font-mono", textTone[r.scoreTone])}>{r.score}</td>
                     </tr>
                   ))}
                   <tr className="bg-muted/20">
-                    <td colSpan={6} className="px-3 py-3 italic text-muted-foreground text-xs">+ 99 more locations</td>
+                    <td colSpan={7} className="px-3 py-3 italic text-muted-foreground text-xs">+ 99 more locations</td>
                     <td className="px-3 py-3 text-right">
                       <button className="text-primary text-xs font-medium hover:underline inline-flex items-center gap-1">
                         Show all <ArrowRight className="h-3 w-3" />
