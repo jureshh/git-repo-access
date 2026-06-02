@@ -162,6 +162,47 @@ export default function Investigations() {
           </Link>
         </p>
       </section>
+
+      {/* Zone 3 — Recently Completed */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-foreground">Recently Completed</h2>
+          <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            View all →
+          </button>
+        </div>
+
+        <div className="bg-[#f9fafb] rounded-[10px] border p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+              ✓ Completed
+            </span>
+            <span className="text-xs text-muted-foreground">Completed 15 May 2026</span>
+          </div>
+          <div>
+            <h3 className="font-bold text-[15px] text-foreground">
+              Indexation Review — Full Portfolio Q1 2026
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Reviewed HICP vs CPI application across 104 locations. 2 anomalies identified.
+            </p>
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-xs text-muted-foreground">Template: Service Charge Audit</span>
+            <div className="flex items-center gap-2">
+              <button className="text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
+                View report
+              </button>
+              <button
+                className="text-xs font-medium px-3 py-1.5 rounded-md border transition-colors hover:bg-[#0d9488]/5"
+                style={{ color: TEAL, borderColor: TEAL }}
+              >
+                Export Evidence Pack →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
