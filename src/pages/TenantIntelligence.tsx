@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { FileText, ArrowRight, Download, Settings2, ChevronDown } from "lucide-react";
+import { FileText, ArrowRight, Download, Settings2, ChevronDown, CheckCircle2, Clock } from "lucide-react";
 
 type PillTone = "green" | "amber" | "red" | "grey" | "purple";
 
@@ -137,6 +137,8 @@ interface Anomaly {
   exposure?: string;
   effective?: { label: string; value: string; valueTone: "amber" | "red" };
   note?: string;
+  confidence: number;
+  reviewed: boolean;
 }
 
 interface AnomalySection {
@@ -160,18 +162,22 @@ const anomalySections: AnomalySection[] = [
     items: [
       { tone: "red", store: "Kraków – Galeria Bronowice", type: "⚠ Service Charge Cap Breach",
         desc: "Landlord invoiced 23% increase. Lease cap is 8% per annum. Excess: PLN 184,000 this year.",
-        source: "→ §12.4 — Base Lease, p. 23, Annex B", recovery: "Recoverable: PLN 184,000" },
+        source: "→ §12.4 — Base Lease, p. 23, Annex B", recovery: "Recoverable: PLN 184,000",
+        confidence: 94, reviewed: true },
       { tone: "red", store: "Kraków – Galeria Bronowice", type: "⚠ Amendment Conflict — Effective Terms Unclear",
         desc: "Base lease §6.1 sets cap at 8%. Amendment 2 §3.4 introduces a contradictory calculation basis. Current obligation is legally ambiguous.",
         effective: { label: "Current effective term:", value: "Disputed — requires legal review", valueTone: "amber" },
         source: "→ §6.1 Base Lease p.14 conflicts with Amendment 2 §3.4 p.6",
-        exposure: "Dispute exposure: PLN 210,000" },
+        exposure: "Dispute exposure: PLN 210,000",
+        confidence: 78, reviewed: false },
       { tone: "red", store: "Warszawa – Westfield Mokotów", type: "⚠ No Enforceable Cap Clause",
         desc: "Amendment 3 removed the cap reference. Ambiguous drafting — requires legal review before next service charge reconciliation.",
-        source: "→ Amendment 3, §6.1", exposure: "Exposure: PLN 290,000/yr" },
+        source: "→ Amendment 3, §6.1", exposure: "Exposure: PLN 290,000/yr",
+        confidence: 81, reviewed: false },
       { tone: "amber", store: "Wrocław – Magnolia Park", type: "📊 Indexation Drift — HICP vs CPI",
         desc: "CPI applied at 6.3%. Contractual index is HICP. Cumulative difference over 3 years = PLN 67,000.",
-        source: "→ §9.1 — Indexation clause", recovery: "Recoverable: PLN 67,000" },
+        source: "→ §9.1 — Indexation clause", recovery: "Recoverable: PLN 67,000",
+        confidence: 91, reviewed: true },
     ],
   },
   {
@@ -184,10 +190,12 @@ const anomalySections: AnomalySection[] = [
     items: [
       { tone: "amber", store: "Gdańsk – Forum Gdańsk", type: "⏰ Break Option Closing in 45 Days",
         desc: "Exercise window closes 15 Jul 2026. Notice period is 90 days. Serve notice by 15 Jul or locked until 2029.",
-        source: "→ §18.2 — Base Lease, p. 31" },
+        source: "→ §18.2 — Base Lease, p. 31",
+        confidence: 97, reviewed: true },
       { tone: "amber", store: "Kraków – Galeria Bronowice", type: "⏰ Guarantee Renewal — Expires Sep 2026",
         desc: "Bank guarantee expires September 2026 — before lease end. Renewal must be initiated now to avoid contractual breach.",
-        source: "→ §14.1 — Base Lease, p. 38" },
+        source: "→ §14.1 — Base Lease, p. 38",
+        confidence: 95, reviewed: true },
     ],
   },
   {
@@ -198,13 +206,16 @@ const anomalySections: AnomalySection[] = [
     items: [
       { tone: "blue", store: "Kraków – Galeria Bronowice", type: "📄 Missing Power of Attorney",
         desc: "Amendment 2 signed without documented authority. Signatory not listed in KRS extract. Legal validity uncertain.",
-        source: "→ Amendment 2, signature block" },
+        source: "→ Amendment 2, signature block",
+        confidence: 88, reviewed: true },
       { tone: "blue", store: "Warszawa – Westfield Mokotów", type: "📋 Bank Guarantee Expired",
         desc: "Guarantee of PLN 450,000 expired Jan 2026. Landlord has not been notified. Contractual obligation unmet.",
-        source: "→ §22.1 — Base Lease, p. 44" },
+        source: "→ §22.1 — Base Lease, p. 44",
+        confidence: 96, reviewed: true },
       { tone: "amber", store: "Wrocław – Magnolia Park", type: "📎 Missing Annex",
         desc: "Annex 4 (service charge schedule) referenced in §12.1 but not present in document set. Current reconciliation basis uncertain.",
-        source: "→ §12.1 — Base Lease, p. 19" },
+        source: "→ §12.1 — Base Lease, p. 19",
+        confidence: 73, reviewed: false },
     ],
   },
   {
@@ -217,10 +228,12 @@ const anomalySections: AnomalySection[] = [
         desc: "Lease term is 12 years — 4.1 years above portfolio average of 7.9 years. Lessor entity shares a registered address with a former company director.",
         effective: { label: "Lease term vs portfolio avg:", value: "12 yrs vs 7.9 yrs avg (+51%)", valueTone: "red" },
         source: "→ §2.1 Lease Term — KRS registry cross-reference",
-        note: "Flagged for governance review" },
+        note: "Flagged for governance review",
+        confidence: 69, reviewed: false },
       { tone: "amber", store: "Katowice – Silesia City Center", type: "📉 Underperformance vs Feasibility",
         desc: "Store turnover is 31% below feasibility model. Rent renegotiation clause may be triggered — check §11.3.",
-        source: "→ §11.3 — Turnover schedule" },
+        source: "→ §11.3 — Turnover schedule",
+        confidence: 82, reviewed: false },
     ],
   },
 ];
@@ -243,6 +256,12 @@ function AnomalyLegend() {
       </div>
     </Card>
   );
+}
+
+function confidenceBarColor(v: number): string {
+  if (v >= 85) return "#10b981";
+  if (v >= 70) return "#d97706";
+  return "#ef4444";
 }
 
 function AnomalyGroup({ section }: { section: AnomalySection }) {
@@ -282,6 +301,32 @@ function AnomalyGroup({ section }: { section: AnomalySection }) {
                     </span>
                   </p>
                 )}
+                {/* Confidence footer */}
+                <div className="flex items-center justify-between gap-3 pt-2 border-t border-[#f3f4f6]">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                      <span>Extraction confidence</span>
+                      <span className="font-mono font-semibold">{a.confidence}%</span>
+                    </div>
+                    <div className="h-1 rounded-sm bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-sm"
+                        style={{ width: `${a.confidence}%`, backgroundColor: confidenceBarColor(a.confidence) }}
+                      />
+                    </div>
+                  </div>
+                  <div className="shrink-0 pl-2">
+                    {a.reviewed ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success">
+                        <CheckCircle2 className="h-3 w-3" /> Human reviewed
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-warning">
+                        <Clock className="h-3 w-3" /> Pending review
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <p className="text-[11px] italic text-primary">{a.source}</p>
                 {a.recovery && <p className="text-xs font-bold text-success">{a.recovery}</p>}
                 {a.exposure && <p className="text-xs font-bold text-destructive">{a.exposure}</p>}
