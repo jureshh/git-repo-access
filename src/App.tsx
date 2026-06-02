@@ -11,6 +11,7 @@ import BuildingIntelligence from "./pages/BuildingIntelligence";
 import LeaseReview from "./pages/LeaseReview";
 import TenantIntelligence from "./pages/TenantIntelligence";
 import Investigations from "./pages/Investigations";
+import ServiceChargeAudit from "./pages/ServiceChargeAudit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/lease-review" element={<LeaseReview />} />
             <Route path="/tenant-intelligence" element={<TenantIntelligence />} />
             <Route path="/investigations" element={<Investigations />} />
+            <Route path="/investigations/service-charge-audit" element={<ServiceChargeAudit />} />
             <Route path="/investigations/:slug" element={<Investigations />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
