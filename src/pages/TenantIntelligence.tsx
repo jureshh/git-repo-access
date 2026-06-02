@@ -137,6 +137,8 @@ interface Anomaly {
   exposure?: string;
   effective?: { label: string; value: string; valueTone: "amber" | "red" };
   note?: string;
+  confidence: number;
+  reviewed: boolean;
 }
 
 interface AnomalySection {
