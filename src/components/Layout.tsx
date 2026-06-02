@@ -7,7 +7,7 @@ const navItems = [
   { to: "/upload", label: "Upload", icon: Upload },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/building", label: "Building", icon: LayoutGrid },
-  { to: "/tenant-intelligence", label: "Tenant Intelligence", icon: Users, badge: "7" },
+  { to: "/tenant-intelligence", label: "Tenant Intelligence", icon: Users, badge: "9" },
   { to: "/lease-review", label: "Lease Review", icon: FileSearch },
 ];
 
