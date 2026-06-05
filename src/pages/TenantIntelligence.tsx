@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { FileText, ArrowRight, Download, Settings2, ChevronDown, CheckCircle2, Clock } from "lucide-react";
+import { FileText, ArrowRight, Settings2, ChevronDown, CheckCircle2, Clock } from "lucide-react";
 
 type PillTone = "green" | "amber" | "red" | "grey" | "purple";
 
@@ -231,7 +232,8 @@ const anomalySections: AnomalySection[] = [
         note: "Flagged for governance review",
         confidence: 69, reviewed: false },
       { tone: "amber", store: "Katowice – Silesia City Center", type: "📉 Underperformance vs Feasibility",
-        desc: "Store turnover is 31% below feasibility model. Rent renegotiation clause may be triggered — check §11.3.",
+        desc: "Store turnover is 31% below the feasibility model assumption. Under §11.3, this may entitle the tenant to request a rent review. Recommended action: instruct legal review before the next rent review date (Sep 2026).",
+        note: "Commercial opportunity: grounds for rent renegotiation at next review",
         source: "→ §11.3 — Turnover schedule",
         confidence: 82, reviewed: false },
     ],
