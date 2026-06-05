@@ -372,6 +372,7 @@ function SummaryItem({ label, value, sub, tone }: { label: string; value: string
 
 export default function TenantIntelligence() {
   const [columnsOpen, setColumnsOpen] = useState(false);
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState<null | { header: string; body: string; source?: string; recovery?: string; exposure?: string; bodyMuted?: boolean }>(null);
 
@@ -405,6 +406,19 @@ export default function TenantIntelligence() {
         source: "→ §22.1 — Base Lease, p. 44 (Warszawa) · §14.1 — Base Lease, p. 38 (Kraków)",
         exposure: "Combined guarantee exposure: PLN 504,000",
       });
+    } else if (s.includes("exit") || s.includes("next 12 months")) {
+      setAnswer({
+        header: "4 locations with exercisable exit options in the next 12 months",
+        body: "Gdańsk – Forum Gdańsk: break option open now, closes 15 Jul 2026 — 43 days remaining. Warszawa – Westfield Mokotów: break option opens Oct 2026. Katowice – Silesia City Center: lease expires Jan 2027 — no renewal obligation. Kraków – Galeria Bronowice: break option available but notice window closing — serve notice by 15 Jul 2026.",
+        source: "→ §18.2 (Gdańsk) · §14.2 (Warszawa) · §3.1 (Katowice) · §14.1 (Kraków)",
+      });
+    } else if (s.includes("overcharg") || s.includes("landlord")) {
+      setAnswer({
+        header: "3 landlords with identified overcharges — combined PLN 751,000",
+        body: "Galeria Bronowice landlord: service charge invoiced at 23% vs contractual cap of 8% — excess PLN 184,000. Westfield Mokotów landlord: no enforceable cap clause after Amendment 3 — exposure PLN 290,000/yr. Magnolia Park landlord: wrong indexation index applied (CPI vs HICP) — cumulative overcharge PLN 67,000.",
+        source: "→ §12.4 Base Lease p.23 · Amendment 3 §6.1 · §9.1 Indexation clause",
+        recovery: "Total recoverable: PLN 541,000",
+      });
     } else {
       setAnswer({
         header: "Searching your portfolio...",
@@ -429,7 +443,7 @@ export default function TenantIntelligence() {
             <SummaryItem label="Locations" value="104" sub="across 6 countries" />
             <SummaryItem label="Total Rent/yr" value="PLN 47.2M" sub="avg PLN 453k per location" />
             <SummaryItem label="Portfolio WAULT" value="3.8 yrs" tone="teal" />
-            <SummaryItem label="Service Charge Excess" value="PLN 1.34M" sub="vs cap provisions" tone="red" />
+            <SummaryItem label="Service Charge Excess" value="PLN 1.34M" sub="contractually yours to recover" tone="red" />
             <SummaryItem label="Break Options Open" value="9" sub="next 6 months" tone="amber" />
             <SummaryItem label="Anomalies Detected" value="23" sub="9 critical" tone="red" />
           </div>
@@ -443,8 +457,8 @@ export default function TenantIntelligence() {
               <p className="text-sm text-muted-foreground">Sorted by risk score</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
-                <Download className="h-4 w-4" /> Export Evidence Pack
+              <Button variant="outline" size="sm" onClick={() => navigate("/investigations")} className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
+                Start Investigation →
               </Button>
               <Button variant="outline" size="sm" onClick={() => setColumnsOpen(true)}>
                 <Settings2 className="h-4 w-4" /> Customise Columns
@@ -641,6 +655,8 @@ export default function TenantIntelligence() {
                     "Stores with indexation errors",
                     "Missing bank guarantees",
                     "All locations above cap",
+                    "Where can I exit in the next 12 months?",
+                    "Which landlords are overcharging me?",
                   ].map((q) => (
                     <button key={q} onClick={() => { setQuery(q); runQuery(q); }} className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors">
                       {q}
