@@ -138,6 +138,7 @@ interface Anomaly {
   exposure?: string;
   effective?: { label: string; value: string; valueTone: "amber" | "red" };
   note?: string;
+  opportunity?: string;
   confidence: number;
   reviewed: boolean;
 }
@@ -233,7 +234,7 @@ const anomalySections: AnomalySection[] = [
         confidence: 69, reviewed: false },
       { tone: "amber", store: "Katowice – Silesia City Center", type: "📉 Underperformance vs Feasibility",
         desc: "Store turnover is 31% below the feasibility model assumption. Under §11.3, this may entitle the tenant to request a rent review. Recommended action: instruct legal review before the next rent review date (Sep 2026).",
-        note: "Commercial opportunity: grounds for rent renegotiation at next review",
+        opportunity: "Commercial opportunity: grounds for rent renegotiation at next review",
         source: "→ §11.3 — Turnover schedule",
         confidence: 82, reviewed: false },
     ],
@@ -295,6 +296,9 @@ function AnomalyGroup({ section }: { section: AnomalySection }) {
                 <p className="font-semibold text-sm text-foreground">{a.store}</p>
                 <p className={cn("text-xs font-bold", anomalyText[a.tone])}>{a.type}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{a.desc}</p>
+                {a.opportunity && (
+                  <p className="text-[11px] font-bold text-warning">{a.opportunity}</p>
+                )}
                 {a.effective && (
                   <p className="text-[11px] text-muted-foreground">
                     {a.effective.label}{" "}
