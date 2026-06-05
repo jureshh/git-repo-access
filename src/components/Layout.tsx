@@ -7,9 +7,9 @@ const navItems = [
   { to: "/upload", label: "Upload", icon: Upload },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/building", label: "Building", icon: LayoutGrid },
-  { to: "/tenant-intelligence", label: "Tenant Intelligence", icon: Users, badge: "9" },
+  { to: "/tenant-intelligence", label: "Tenants", icon: Users, badge: "9" },
   { to: "/investigations", label: "Investigations", icon: Search },
-  { to: "/lease-review", label: "Lease Review", icon: FileSearch },
+  { to: "/lease-review", label: "Review", icon: FileSearch },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

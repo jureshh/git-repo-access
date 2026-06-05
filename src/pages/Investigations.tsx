@@ -18,6 +18,13 @@ const templates = [
     tags: ["Notice periods", "Exit modelling", "Deadline alerts"],
   },
   {
+    icon: "🤝",
+    title: "Negotiation Leverage",
+    description:
+      "Identify which locations give you the strongest position at renewal. Break options approaching, performance below feasibility, service charges above portfolio average. Produces a negotiation briefing.",
+    tags: ["Renewal readiness", "Break option windows", "Portfolio benchmarking"],
+  },
+  {
     icon: "🚪",
     title: "Lease Exit Analysis",
     description:
@@ -128,7 +135,7 @@ export default function Investigations() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {templates.map((t) => (
             <button
               key={t.title}
