@@ -97,10 +97,6 @@ const fmt = (n: number) => n.toLocaleString();
 export default function Dashboard() {
   const navigate = useNavigate();
   const alertsRef = useRef<HTMLDivElement>(null);
-  const financialRef = useRef<HTMLDivElement>(null);
-
-  const scrollTo = (ref: React.RefObject<HTMLDivElement>) =>
-    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
     <div className="py-8 lg:py-12">
@@ -111,13 +107,12 @@ export default function Dashboard() {
         </div>
 
         {/* KPI row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <KpiTile label="Portfolio WAULT" value="4.2 yrs" sub="Weighted avg unexpired lease term" tone={C.teal} />
           <KpiTile label="Gross Yield" value="6.2%" sub="Headline rent at PLN 134.5M asset value" tone={C.teal} />
           <KpiTile label="GRI" value="PLN 11.68M" sub="Base rent + turnover + service charge" tone={C.green} />
           <KpiTile label="NOI" value="PLN 8.41M" sub="Net Operating Income" detail="72.0% NOI margin" tone={C.blue} />
           <KpiTile label="Occupied GLA" value="93.2%" sub="17,200 of 18,450 sqm" tone={C.green} />
-          <KpiTile label="Guarantees at Risk" value="2" sub="Expiring within 90 days" tone={C.red} onClick={() => scrollTo(financialRef)} />
         </div>
 
         {/* Charts row 1 */}
