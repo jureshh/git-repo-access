@@ -109,7 +109,7 @@ export default function Dashboard() {
         {/* KPI row */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <KpiTile label="Portfolio WAULT" value="4.2 yrs" sub="Weighted avg unexpired lease term" tone={C.teal} />
-          <KpiTile label="Current annual yield based on NOI" value="6.3%" sub="NOI at PLN 134.5M asset value" tone={C.teal} />
+          <KpiTile label="Current NOI Yield" value="6.3%" sub="NOI at PLN 134.5M asset value" tone={C.teal} />
           <KpiTile label="GRI" value="PLN 11.68M" sub="Base rent + turnover + service charge" tone={C.green} />
           <KpiTile label="NOI" value="PLN 8.41M" sub="Net Operating Income" detail="72.0% NOI margin" tone={C.blue} />
           <KpiTile label="Occupied GLA" value="93.2%" sub="17,200 of 18,450 sqm" tone={C.green} />
