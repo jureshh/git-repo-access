@@ -316,8 +316,8 @@ export default function Dashboard() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <Card className="p-4 border-l-4 border-l-primary">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Gross Yield</p>
-              <p className="text-sm">6.2% — headline rent at assumed asset value of PLN 134.5M</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Current annual yield based on NOI</p>
+              <p className="text-sm">6.3% — NOI at assumed asset value of PLN 134.5M</p>
             </Card>
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Identified Leakage</p>
