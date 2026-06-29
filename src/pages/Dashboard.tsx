@@ -56,17 +56,23 @@ const rentData = [
 ];
 
 const bubbleColor = (years: number) =>
-  years < 1.5 ? "#ef4444" : years < 3 ? "#f59e0b" : "#22c55e";
+  years < 1 ? "#ef4444" : years < 2.5 ? "#f59e0b" : "#22c55e";
 
 const expiryRiskData = [
-  { tenant: "Anchor – Fashion", years: 6.1, rent: 1_260_000, gla: 1800 },
-  { tenant: "Optika Centrum", years: 4.8, rent: 99_750, gla: 95 },
-  { tenant: "Kids World", years: 3.6, rent: 272_000, gla: 340 },
-  { tenant: "Electronics Plus", years: 2.3, rent: 558_000, gla: 620 },
-  { tenant: "Sport Zone", years: 1.9, rent: 637_500, gla: 850 },
-  { tenant: "Café Roma", years: 0.7, rent: 180_000, gla: 180 },
-  { tenant: "Jewellery Co", years: 0.4, rent: 112_500, gla: 75 },
-].map((d) => ({ ...d, color: bubbleColor(d.years) }));
+  { tenant: "Jewellery Co", years: 0.4, actualYears: 0.4, rent: 112_500, gla: 75 },
+  { tenant: "Café Roma", years: 0.7, actualYears: 0.7, rent: 180_000, gla: 180 },
+  { tenant: "Flower Boutique", years: 0.3, actualYears: 0.3, rent: 48_000, gla: 60 },
+  { tenant: "Sport Zone", years: 1.9, actualYears: 1.9, rent: 637_500, gla: 850 },
+  { tenant: "Electronics Plus", years: 2.3, actualYears: 2.3, rent: 558_000, gla: 620 },
+  { tenant: "Coffee Corner", years: 1.5, actualYears: 1.5, rent: 96_000, gla: 120 },
+  { tenant: "Mobile Tech", years: 1.2, actualYears: 1.2, rent: 180_000, gla: 200 },
+  { tenant: "Kids World", years: 3.6, actualYears: 3.6, rent: 272_000, gla: 340 },
+  { tenant: "Book Store", years: 3.2, actualYears: 3.2, rent: 320_000, gla: 400 },
+  { tenant: "Home & Living", years: 4.1, actualYears: 4.1, rent: 450_000, gla: 550 },
+  { tenant: "Optika Centrum", years: 4.8, actualYears: 4.8, rent: 99_750, gla: 95 },
+  { tenant: "Anchor – Fashion", years: 5, actualYears: 6.1, rent: 1_260_000, gla: 1800 },
+  { tenant: "Fashion Outlet", years: 5, actualYears: 5.4, rent: 840_000, gla: 1200 },
+].map((d) => ({ ...d, color: bubbleColor(d.actualYears) }));
 
 const alerts = [
   { tone: "red", tenant: "Café Roma", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
@@ -150,9 +156,9 @@ export default function Dashboard() {
         {/* WAULT + Alerts */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-5">
-            <h3 className="text-base font-display font-semibold">Tenant Expiry Risk Matrix</h3>
+            <h3 className="text-base font-display font-semibold">Tenant Expiry Risk Matrix (0–5 Years)</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Bubble size = GLA. Tenants in the red zone require immediate action.
+              Bubble size = GLA. Position = years until lease expiry vs annual rent.
             </p>
             <ResponsiveContainer width="100%" height={320}>
               <ScatterChart margin={{ top: 16, right: 30, left: 10, bottom: 28 }}>
@@ -161,8 +167,8 @@ export default function Dashboard() {
                   type="number"
                   dataKey="years"
                   name="WAULT"
-                  domain={[0, 8]}
-                  ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8]}
+                  domain={[0, 5]}
+                  ticks={[0, 1, 2, 3, 4, 5]}
                   tick={{ fontSize: 11 }}
                   stroke="hsl(var(--muted-foreground))"
                   label={{ value: "Years Remaining", position: "insideBottom", offset: -12, style: { fontSize: 11, fill: "hsl(var(--muted-foreground))" } }}
@@ -176,23 +182,28 @@ export default function Dashboard() {
                   tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
                   label={{ value: "Annual Rent (PLN)", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
                 />
-                <ZAxis type="number" dataKey="gla" range={[200, 2400]} name="GLA" />
+                <ZAxis type="number" dataKey="gla" range={[8, 40]} name="GLA" />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as typeof expiryRiskData[number];
+                    const waultLabel = d.actualYears > 5 ? "5+ yrs" : `${d.actualYears} yrs`;
+                    const tier = d.actualYears < 1 ? "Critical" : d.actualYears < 2.5 ? "Watch" : "Stable";
                     return (
                       <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
                         <div className="font-semibold mb-1">{d.tenant}</div>
-                        <div>WAULT: {d.years} yrs</div>
+                        <div>WAULT: {waultLabel}</div>
                         <div>Annual Rent: PLN {d.rent.toLocaleString()}</div>
                         <div>GLA: {d.gla.toLocaleString()} m²</div>
+                        <div>Risk tier: {tier}</div>
                       </div>
                     );
                   }}
                 />
                 <ReferenceArea x1={0} x2={1} fill="#ef4444" fillOpacity={0.08} />
+                <ReferenceArea x1={1} x2={2.5} fill="#f59e0b" fillOpacity={0.08} />
+                <ReferenceArea x1={2.5} x2={5} fill="#22c55e" fillOpacity={0.08} />
                 <ReferenceLine
                   x={1}
                   stroke="#ef4444"
@@ -213,7 +224,7 @@ export default function Dashboard() {
                     dataKey="tenant"
                     position="right"
                     offset={10}
-                    style={{ fontSize: 10, fill: "hsl(var(--foreground))" }}
+                    style={{ fontSize: 11, fill: "hsl(var(--foreground))" }}
                   />
                 </Scatter>
               </ScatterChart>
