@@ -56,17 +56,23 @@ const rentData = [
 ];
 
 const bubbleColor = (years: number) =>
-  years < 1.5 ? "#ef4444" : years < 3 ? "#f59e0b" : "#22c55e";
+  years < 1 ? "#ef4444" : years < 2.5 ? "#f59e0b" : "#22c55e";
 
 const expiryRiskData = [
-  { tenant: "Anchor – Fashion", years: 6.1, rent: 1_260_000, gla: 1800 },
-  { tenant: "Optika Centrum", years: 4.8, rent: 99_750, gla: 95 },
-  { tenant: "Kids World", years: 3.6, rent: 272_000, gla: 340 },
-  { tenant: "Electronics Plus", years: 2.3, rent: 558_000, gla: 620 },
-  { tenant: "Sport Zone", years: 1.9, rent: 637_500, gla: 850 },
-  { tenant: "Café Roma", years: 0.7, rent: 180_000, gla: 180 },
-  { tenant: "Jewellery Co", years: 0.4, rent: 112_500, gla: 75 },
-].map((d) => ({ ...d, color: bubbleColor(d.years) }));
+  { tenant: "Jewellery Co", years: 0.4, actualYears: 0.4, rent: 112_500, gla: 75 },
+  { tenant: "Café Roma", years: 0.7, actualYears: 0.7, rent: 180_000, gla: 180 },
+  { tenant: "Flower Boutique", years: 0.3, actualYears: 0.3, rent: 48_000, gla: 60 },
+  { tenant: "Sport Zone", years: 1.9, actualYears: 1.9, rent: 637_500, gla: 850 },
+  { tenant: "Electronics Plus", years: 2.3, actualYears: 2.3, rent: 558_000, gla: 620 },
+  { tenant: "Coffee Corner", years: 1.5, actualYears: 1.5, rent: 96_000, gla: 120 },
+  { tenant: "Mobile Tech", years: 1.2, actualYears: 1.2, rent: 180_000, gla: 200 },
+  { tenant: "Kids World", years: 3.6, actualYears: 3.6, rent: 272_000, gla: 340 },
+  { tenant: "Book Store", years: 3.2, actualYears: 3.2, rent: 320_000, gla: 400 },
+  { tenant: "Home & Living", years: 4.1, actualYears: 4.1, rent: 450_000, gla: 550 },
+  { tenant: "Optika Centrum", years: 4.8, actualYears: 4.8, rent: 99_750, gla: 95 },
+  { tenant: "Anchor – Fashion", years: 5, actualYears: 6.1, rent: 1_260_000, gla: 1800 },
+  { tenant: "Fashion Outlet", years: 5, actualYears: 5.4, rent: 840_000, gla: 1200 },
+].map((d) => ({ ...d, color: bubbleColor(d.actualYears) }));
 
 const alerts = [
   { tone: "red", tenant: "Café Roma", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
