@@ -268,7 +268,7 @@ export default function Dashboard() {
         </div>
 
         {/* Financial Summary */}
-        <div ref={financialRef} className="space-y-4">
+        <div className="space-y-4">
           <h3 className="text-base font-display font-semibold">Financial Summary</h3>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
