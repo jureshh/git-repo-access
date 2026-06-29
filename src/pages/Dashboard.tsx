@@ -14,12 +14,13 @@ const C = {
   amber: "hsl(var(--warning))",
   red: "hsl(var(--destructive))",
   neutral: "hsl(var(--muted-foreground))",
+  blue: "#3b82f6",
 };
 
 interface KpiProps {
-  label: string; value: string; sub: string; tone: string; onClick?: () => void;
+  label: string; value: string; sub: string; tone: string; onClick?: () => void; detail?: string;
 }
-function KpiTile({ label, value, sub, tone, onClick }: KpiProps) {
+function KpiTile({ label, value, sub, tone, onClick, detail }: KpiProps) {
   return (
     <Card
       onClick={onClick}
@@ -32,6 +33,7 @@ function KpiTile({ label, value, sub, tone, onClick }: KpiProps) {
       <p className="text-xs font-medium text-muted-foreground mt-1">{label}</p>
       <p className="text-2xl font-display font-bold mt-1.5 tracking-tight">{value}</p>
       <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{sub}</p>
+      {detail && <p className="text-[11px] font-medium mt-1" style={{ color: tone }}>{detail}</p>}
     </Card>
   );
 }
@@ -112,9 +114,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <KpiTile label="Portfolio WAULT" value="4.2 yrs" sub="Weighted avg unexpired lease term" tone={C.teal} />
           <KpiTile label="Gross Yield" value="6.2%" sub="Headline rent at PLN 134.5M asset value" tone={C.teal} />
-          <KpiTile label="Annual Rent" value="PLN 8.34M" sub="7 active leases" tone={C.neutral} />
+          <KpiTile label="GRI" value="PLN 11.68M" sub="Base rent + turnover + service charge" tone={C.green} />
+          <KpiTile label="NOI" value="PLN 8.41M" sub="Net Operating Income" detail="72.0% NOI margin" tone={C.blue} />
           <KpiTile label="Occupied GLA" value="93.2%" sub="17,200 of 18,450 sqm" tone={C.green} />
-          <KpiTile label="Active Alerts" value="3" sub="Requires attention" tone={C.amber} onClick={() => scrollTo(alertsRef)} />
           <KpiTile label="Guarantees at Risk" value="2" sub="Expiring within 90 days" tone={C.red} onClick={() => scrollTo(financialRef)} />
         </div>
 
