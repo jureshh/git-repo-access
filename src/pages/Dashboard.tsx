@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LabelList, Cell, ReferenceLine,
+  LabelList, Cell, ReferenceLine, ScatterChart, Scatter, ZAxis, ReferenceArea,
 } from "recharts";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -55,15 +55,18 @@ const rentData = [
   { tenant: "Optika Centrum", value: 99_750, color: C.green },
 ];
 
-const waultData = [
-  { tenant: "Anchor – Fashion", years: 6.1, color: C.green },
-  { tenant: "Optika Centrum", years: 4.8, color: C.green },
-  { tenant: "Kids World", years: 3.6, color: C.green },
-  { tenant: "Electronics Plus", years: 2.3, color: C.amber },
-  { tenant: "Sport Zone", years: 1.9, color: C.amber },
-  { tenant: "Café Roma", years: 0.7, color: C.red },
-  { tenant: "Jewellery Co", years: 0.4, color: C.red },
-];
+const bubbleColor = (years: number) =>
+  years < 1.5 ? "#ef4444" : years < 3 ? "#f59e0b" : "#22c55e";
+
+const expiryRiskData = [
+  { tenant: "Anchor – Fashion", years: 6.1, rent: 1_260_000, gla: 1800 },
+  { tenant: "Optika Centrum", years: 4.8, rent: 99_750, gla: 95 },
+  { tenant: "Kids World", years: 3.6, rent: 272_000, gla: 340 },
+  { tenant: "Electronics Plus", years: 2.3, rent: 558_000, gla: 620 },
+  { tenant: "Sport Zone", years: 1.9, rent: 637_500, gla: 850 },
+  { tenant: "Café Roma", years: 0.7, rent: 180_000, gla: 180 },
+  { tenant: "Jewellery Co", years: 0.4, rent: 112_500, gla: 75 },
+].map((d) => ({ ...d, color: bubbleColor(d.years) }));
 
 const alerts = [
   { tone: "red", tenant: "Café Roma", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
@@ -147,20 +150,73 @@ export default function Dashboard() {
         {/* WAULT + Alerts */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-5">
-            <h3 className="text-base font-display font-semibold mb-4">WAULT by Tenant (years remaining)</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={waultData} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+            <h3 className="text-base font-display font-semibold">Tenant Expiry Risk Matrix</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Bubble size = GLA. Tenants in the red zone require immediate action.
+            </p>
+            <ResponsiveContainer width="100%" height={320}>
+              <ScatterChart margin={{ top: 16, right: 30, left: 10, bottom: 28 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis dataKey="tenant" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={110} />
-                <Tooltip formatter={(v: number) => [`${v} yrs`, "WAULT"]} />
-                <ReferenceLine x={1} stroke={C.red} strokeDasharray="4 4" />
-                <ReferenceLine x={3} stroke={C.amber} strokeDasharray="4 4" />
-                <Bar dataKey="years" radius={[0, 6, 6, 0]}>
-                  {waultData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                  <LabelList dataKey="years" position="right" style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
-                </Bar>
-              </BarChart>
+                <XAxis
+                  type="number"
+                  dataKey="years"
+                  name="WAULT"
+                  domain={[0, 8]}
+                  ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8]}
+                  tick={{ fontSize: 11 }}
+                  stroke="hsl(var(--muted-foreground))"
+                  label={{ value: "Years Remaining", position: "insideBottom", offset: -12, style: { fontSize: 11, fill: "hsl(var(--muted-foreground))" } }}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="rent"
+                  name="Annual Rent"
+                  tick={{ fontSize: 10 }}
+                  stroke="hsl(var(--muted-foreground))"
+                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
+                  label={{ value: "Annual Rent (PLN)", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
+                />
+                <ZAxis type="number" dataKey="gla" range={[200, 2400]} name="GLA" />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3" }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload as typeof expiryRiskData[number];
+                    return (
+                      <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
+                        <div className="font-semibold mb-1">{d.tenant}</div>
+                        <div>WAULT: {d.years} yrs</div>
+                        <div>Annual Rent: PLN {d.rent.toLocaleString()}</div>
+                        <div>GLA: {d.gla.toLocaleString()} m²</div>
+                      </div>
+                    );
+                  }}
+                />
+                <ReferenceArea x1={0} x2={1} fill="#ef4444" fillOpacity={0.08} />
+                <ReferenceLine
+                  x={1}
+                  stroke="#ef4444"
+                  strokeDasharray="4 4"
+                  label={{ value: "Critical", position: "top", fill: "#ef4444", fontSize: 10 }}
+                />
+                <ReferenceLine
+                  x={2.5}
+                  stroke="#f59e0b"
+                  strokeDasharray="4 4"
+                  label={{ value: "Watch", position: "top", fill: "#f59e0b", fontSize: 10 }}
+                />
+                <Scatter data={expiryRiskData}>
+                  {expiryRiskData.map((d, i) => (
+                    <Cell key={i} fill={d.color} fillOpacity={0.7} stroke={d.color} />
+                  ))}
+                  <LabelList
+                    dataKey="tenant"
+                    position="right"
+                    offset={10}
+                    style={{ fontSize: 10, fill: "hsl(var(--foreground))" }}
+                  />
+                </Scatter>
+              </ScatterChart>
             </ResponsiveContainer>
           </Card>
 
