@@ -249,7 +249,12 @@ export default function Dashboard() {
                     );
                   }}
                 />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                <Bar
+                  dataKey="value"
+                  radius={[0, 6, 6, 0]}
+                  cursor="pointer"
+                  onClick={(d: { tenant?: string } | undefined) => d?.tenant && handleSelectTenantFromChart(d.tenant)}
+                >
                   {rentData.map((d, i) => <Cell key={i} fill={d.color} />)}
                   <LabelList dataKey="value" position="right" formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 </Bar>
