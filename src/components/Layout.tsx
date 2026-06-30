@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Building2, LayoutDashboard, Upload, FileSearch, Users, Search } from "lucide-react";
+import { Building2, LayoutDashboard, Upload, FileSearch, Users, Search, MessageSquare } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Settings } from "lucide-react";
@@ -18,6 +18,7 @@ const allNavItems = [
   { to: "/tenant-intelligence", label: "Tenants", icon: Users, badge: "9", key: "tenants" },
   { to: "/investigations", label: "Investigations", icon: Search, key: "investigations" },
   { to: "/lease-review", label: "Review", icon: FileSearch, key: "review" },
+  { to: "/ask-portfolio", label: "Ask Portfolio", icon: MessageSquare, key: "ask" },
 ];
 
 const navItems = allNavItems.filter((i) => {
