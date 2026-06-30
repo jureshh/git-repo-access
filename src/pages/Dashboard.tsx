@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useFormatRent, useFormatAnnualMonthly, useFormatCompact, useCurrency } from "@/lib/currency";
+import { useFormatRent, useFormatAnnualMonthly, useFormatCompact, useCurrency, useCurrencySymbol } from "@/lib/currency";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LabelList, Cell, ReferenceLine, ScatterChart, Scatter, ZAxis, ReferenceArea,
@@ -111,6 +111,9 @@ export default function Dashboard() {
   const fmtAM = useFormatAnnualMonthly();
   const fmtCompact = useFormatCompact();
   const { display } = useCurrency();
+  const curSym = useCurrencySymbol();
+  const { rate } = useCurrency();
+  const convCur = (pln: number) => (display === "EUR" ? pln / rate : pln);
   const [leadMonths, setLeadMonths] = useState<number>(12);
 
   const visibleAlerts = useMemo(
