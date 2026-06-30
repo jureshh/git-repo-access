@@ -243,20 +243,42 @@ export default function Dashboard() {
         {/* Building navigation bar */}
         <BuildingNavBar selectedId={selectedBuilding} onSelect={handleSelectBuilding} />
 
-        {/* Portfolio scope notice */}
+        {/* Mode banner */}
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="text-[11px] font-medium">
-            Portfolio-level KPIs
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            Reflects 1 of 5 properties (Galeria Orkana) — additional properties pending integration.
-          </span>
+          {portfolioMode ? (
+            <span className="text-xs text-muted-foreground">
+              Portfolio Overview · aggregated across {PORTFOLIO.length} buildings. Select a building to drill in.
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              Building Detail · {activePortfolio?.name}{activePortfolio ? ` (${activePortfolio.city})` : ""}
+            </span>
+          )}
         </div>
+
+        {/* Simplified summary card for non-live buildings */}
+        {showSimplifiedOnly && activePortfolio && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <KpiTile label="GLA" value={`${activePortfolio.gla.toLocaleString()} m²`} sub="Gross leasable area" tone={C.teal} />
+              <KpiTile label="Occupied" value={`${(activePortfolio.occupied * 100).toFixed(1)}%`} sub={`${Math.round(activePortfolio.gla * activePortfolio.occupied).toLocaleString()} m² let`} tone={C.green} />
+              <KpiTile label="WAULT" value={`${activePortfolio.wault} yrs`} sub="Weighted avg unexpired lease term" tone={C.teal} />
+              <KpiTile label="GRI" value={fmtRent(activePortfolio.griPln, { compact: true }).primary} sub={fmtRent(activePortfolio.griPln, { compact: true }).secondary} tone={C.green} />
+              <KpiTile label="NOI" value={fmtRent(activePortfolio.noiPln, { compact: true }).primary} sub={fmtRent(activePortfolio.noiPln, { compact: true }).secondary} tone={C.blue} />
+            </div>
+            <Card className="p-5 text-sm text-muted-foreground">
+              Full lease-level detail for this property is pending integration.
+            </Card>
+          </>
+        )}
+
+        {!showSimplifiedOnly && (
+          <>
 
         {/* KPI row */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <KpiTile label="WAULT" value="4.2 yrs" sub="Weighted avg unexpired lease term" tone={C.teal} />
-          <KpiTile label="Current NOI Yield" value="6.3%" sub="NOI at PLN 134.5M asset value" tone={C.teal} />
+          <KpiTile label="WAULT" value={waultLabel} sub={portfolioMode ? "GRI-weighted across portfolio" : "Weighted avg unexpired lease term"} tone={C.teal} />
+          <KpiTile label="Current NOI Yield" value={noiYieldLabel} sub={noiYieldSub} tone={C.teal} />
           <KpiTile
             label="GRI"
             value={griFmt.primary}
@@ -271,7 +293,7 @@ export default function Dashboard() {
             detail={`${noiMonthly.primary}/mo · 72.0% NOI margin`}
             tone={C.blue}
           />
-          <KpiTile label="Occupied GLA" value="93.2%" sub="17,200 of 18,450 sqm" tone={C.green} />
+          <KpiTile label="Occupied GLA" value={occLabel} sub={occSub} tone={C.green} />
         </div>
 
         {/* Charts row 1 */}
@@ -279,13 +301,13 @@ export default function Dashboard() {
           <Card className="p-5">
             <h3 className="text-base font-display font-semibold mb-4">Lease Expiry by Year (sqm)</h3>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={expiryData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+              <BarChart data={chartExpiry} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="year" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip cursor={{ fill: "hsl(var(--muted))" }} formatter={(v: number) => [`${v} sqm`, "Expiring"]} />
                 <Bar dataKey="sqm" radius={[6, 6, 0, 0]}>
-                  {expiryData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  {chartExpiry.map((d, i) => <Cell key={i} fill={d.color} />)}
                   <LabelList dataKey="sqm" position="top" style={{ fontSize: 11, fill: "hsl(var(--foreground))" }} />
                 </Bar>
               </BarChart>
@@ -294,11 +316,13 @@ export default function Dashboard() {
 
           <Card className="p-5">
             <h3 className="text-base font-display font-semibold mb-1">
-              Annual Rent by Tenant ({display})
+              {rentChartTitle}
             </h3>
-            <p className="text-xs text-muted-foreground mb-3">Hover for monthly equivalent.</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              {portfolioMode ? "Sorted descending by GRI · colored by WAULT risk tier." : "Hover for monthly equivalent."}
+            </p>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={rentData} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 5 }}>
+              <BarChart data={chartRent} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
                 <YAxis dataKey="tenant" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={110} />
@@ -319,10 +343,10 @@ export default function Dashboard() {
                 <Bar
                   dataKey="value"
                   radius={[0, 6, 6, 0]}
-                  cursor="pointer"
-                  onClick={(d: { tenant?: string } | undefined) => d?.tenant && handleSelectTenantFromChart(d.tenant)}
+                  cursor={allowChartClick ? "pointer" : "default"}
+                  onClick={(d: { tenant?: string } | undefined) => allowChartClick && d?.tenant && handleSelectTenantFromChart(d.tenant)}
                 >
-                  {rentData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  {chartRent.map((d, i) => <Cell key={i} fill={d.color} />)}
                   <LabelList dataKey="value" position="right" formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 </Bar>
               </BarChart>
@@ -333,9 +357,11 @@ export default function Dashboard() {
         {/* WAULT + Alerts */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-5">
-            <h3 className="text-base font-display font-semibold">Tenant Expiry Risk Matrix (0–10 Years)</h3>
+            <h3 className="text-base font-display font-semibold">{riskChartTitle}</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Bubble size = GLA. Position = years until lease expiry vs annual rent.
+              {portfolioMode
+                ? "Bubble size = GLA. Position = building WAULT vs GRI."
+                : "Bubble size = GLA. Position = years until lease expiry vs annual rent."}
             </p>
             <ResponsiveContainer width="100%" height={320}>
               <ScatterChart margin={{ top: 16, right: 30, left: 10, bottom: 28 }}>
@@ -353,25 +379,25 @@ export default function Dashboard() {
                 <YAxis
                   type="number"
                   dataKey="rent"
-                  name="Annual Rent"
+                  name={portfolioMode ? "GRI" : "Annual Rent"}
                   tick={{ fontSize: 10 }}
                   stroke="hsl(var(--muted-foreground))"
                   tickFormatter={(v) => fmtCompact(v)}
-                  label={{ value: `Annual Rent (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
+                  label={{ value: `${portfolioMode ? "GRI" : "Annual Rent"} (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
                 />
-                <ZAxis type="number" dataKey="gla" domain={[50, 2000]} range={[60, 1600]} name="GLA" />
+                <ZAxis type="number" dataKey="gla" domain={portfolioMode ? [10_000, 40_000] : [50, 2000]} range={[80, 2400]} name="GLA" />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as typeof expiryRiskData[number];
-                    const waultLabel = `${d.actualYears} yrs`;
+                    const wLabel = `${d.actualYears} yrs`;
                     const tier = d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable";
                     const am = fmtAM(d.rent);
                     return (
                       <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
                         <div className="font-semibold mb-1">{d.tenant}</div>
-                        <div>WAULT: {waultLabel}</div>
+                        <div>WAULT: {wLabel}</div>
                         <div>{am.primary}</div>
                         <div className="text-muted-foreground">{am.secondary}</div>
                         <div>GLA: {d.gla.toLocaleString()} m²</div>
@@ -395,8 +421,8 @@ export default function Dashboard() {
                   strokeDasharray="4 4"
                   label={{ value: "Watch", position: "top", fill: "#f59e0b", fontSize: 10 }}
                 />
-                <Scatter data={expiryRiskData}>
-                  {expiryRiskData.map((d, i) => (
+                <Scatter data={chartRisk}>
+                  {chartRisk.map((d, i) => (
                     <Cell key={i} fill={d.color} fillOpacity={0.7} stroke={d.color} />
                   ))}
                   <LabelList
