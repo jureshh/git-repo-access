@@ -37,12 +37,12 @@ const Field = ({
   value: React.ReactNode;
   source?: string;
 }) => (
-  <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-0.5 items-start">
-    <span className="text-muted-foreground text-xs pt-0.5">{label}</span>
-    <div className="text-foreground min-w-0">
+  <div className="grid grid-cols-[9rem_1fr] gap-x-3 items-start py-1">
+    <span className="text-sm text-muted-foreground leading-5">{label}</span>
+    <div className="text-sm text-foreground leading-5 min-w-0">
       <div>{value}</div>
       {source && (
-        <div className="text-[11px] text-muted-foreground mt-0.5">
+        <div className="text-sm text-muted-foreground leading-5">
           <SourceLink>Source: {source}</SourceLink>
         </div>
       )}
@@ -56,40 +56,29 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
   const fmtRent = useFormatRent();
   const fmtAM = useFormatAnnualMonthly();
 
+  const stack = (primary: string, secondary: string, note?: string) => (
+    <div className="flex flex-col">
+      <span className="tabular-nums leading-5">{primary}</span>
+      <span className="tabular-nums leading-5 text-muted-foreground">
+        {secondary}
+        {note ? ` · ${note}` : ""}
+      </span>
+    </div>
+  );
+
   const rentLine = (pln: number, note?: string) => {
     const am = fmtAM(pln);
-    return (
-      <div className="flex flex-col leading-tight">
-        <span className="font-semibold tabular-nums">{am.primary}</span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {am.secondary}
-          {note ? ` · ${note}` : ""}
-        </span>
-      </div>
-    );
+    return stack(am.primary, am.secondary, note);
   };
 
   const perM2Line = (pln: number) => {
     const r = fmtRent(pln, { suffix: "/m²" });
-    return (
-      <div className="flex flex-col leading-tight">
-        <span className="font-semibold tabular-nums">{r.primary}</span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">{r.secondary}</span>
-      </div>
-    );
+    return stack(r.primary, r.secondary);
   };
 
   const amountLine = (pln: number, note?: string) => {
     const r = fmtRent(pln);
-    return (
-      <div className="flex flex-col leading-tight">
-        <span className="font-semibold tabular-nums">{r.primary}</span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {r.secondary}
-          {note ? ` · ${note}` : ""}
-        </span>
-      </div>
-    );
+    return stack(r.primary, r.secondary, note);
   };
 
   return (
