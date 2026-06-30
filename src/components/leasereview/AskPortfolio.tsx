@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Send, Sparkles } from "lucide-react";
+import { ArrowRight, MessageSquarePlus, Send, Sparkles, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ScriptedReply {
@@ -94,38 +94,167 @@ interface Msg {
   sources?: { label: string; ref: string }[];
 }
 
+interface Conversation {
+  id: string;
+  title: string;
+  updatedAt: number;
+  messages: Msg[];
+}
+
+const STORAGE_KEY = "askportfolio.conversations.v1";
+const ACTIVE_KEY = "askportfolio.active.v1";
+
+function loadConversations(): Conversation[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as Conversation[];
+  } catch {
+    return [];
+  }
+}
+
+function newConversation(): Conversation {
+  return {
+    id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    title: "New chat",
+    updatedAt: Date.now(),
+    messages: [],
+  };
+}
+
 export function AskPortfolio() {
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    const existing = loadConversations();
+    return existing.length > 0 ? existing : [newConversation()];
+  });
+  const [activeId, setActiveId] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    const stored = window.localStorage.getItem(ACTIVE_KEY);
+    const existing = loadConversations();
+    if (stored && existing.some((c) => c.id === stored)) return stored;
+    return (existing[0]?.id) ?? "";
+  });
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Ensure activeId is valid on first mount
+  useEffect(() => {
+    if (!activeId && conversations[0]) setActiveId(conversations[0].id);
+  }, [activeId, conversations]);
+
+  // Persist
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+    } catch {}
+  }, [conversations]);
+  useEffect(() => {
+    try {
+      if (activeId) window.localStorage.setItem(ACTIVE_KEY, activeId);
+    } catch {}
+  }, [activeId]);
+
+  const active = useMemo(
+    () => conversations.find((c) => c.id === activeId) ?? conversations[0],
+    [conversations, activeId]
+  );
+  const messages = active?.messages ?? [];
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages.length, activeId]);
 
   const fillPrompt = (text: string) => {
     setInput(text);
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
-  const send = () => {
-    const text = input.trim();
-    if (!text) return;
-    const match = SUGGESTED.find((s) => s.prompt.toLowerCase() === text.toLowerCase());
-    const reply = match?.reply ?? FALLBACK;
-    setMessages((m) => [
-      ...m,
-      { role: "user", text },
-      { role: "assistant", text: reply.answer, sources: reply.sources },
-    ]);
+  const startNewChat = () => {
+    const c = newConversation();
+    setConversations((all) => [c, ...all]);
+    setActiveId(c.id);
     setInput("");
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
+  const deleteChat = (id: string) => {
+    setConversations((all) => {
+      const next = all.filter((c) => c.id !== id);
+      if (next.length === 0) {
+        const fresh = newConversation();
+        setActiveId(fresh.id);
+        return [fresh];
+      }
+      if (id === activeId) setActiveId(next[0].id);
+      return next;
+    });
+  };
+
+  const send = () => {
+    const text = input.trim();
+    if (!text || !active) return;
+    const match = SUGGESTED.find((s) => s.prompt.toLowerCase() === text.toLowerCase());
+    const reply = match?.reply ?? FALLBACK;
+    const userMsg: Msg = { role: "user", text };
+    const aiMsg: Msg = { role: "assistant", text: reply.answer, sources: reply.sources };
+    setConversations((all) =>
+      all.map((c) =>
+        c.id === active.id
+          ? {
+              ...c,
+              messages: [...c.messages, userMsg, aiMsg],
+              updatedAt: Date.now(),
+              title: c.messages.length === 0 ? text.slice(0, 48) : c.title,
+            }
+          : c
+      )
+    );
+    setInput("");
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const sortedConversations = [...conversations].sort((a, b) => b.updatedAt - a.updatedAt);
+
   return (
-    <Card className="flex flex-col h-[calc(100vh-220px)] min-h-[520px] overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4 h-[calc(100vh-220px)] min-h-[520px]">
+      <Card className="flex flex-col overflow-hidden">
+        <div className="p-3 border-b">
+          <Button onClick={startNewChat} className="w-full justify-start gap-2" variant="secondary">
+            <MessageSquarePlus className="h-4 w-4" />
+            New chat
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {sortedConversations.map((c) => (
+            <div
+              key={c.id}
+              className={cn(
+                "group flex items-center gap-1 rounded-md px-2 py-2 text-sm cursor-pointer hover:bg-muted",
+                c.id === activeId && "bg-muted"
+              )}
+              onClick={() => setActiveId(c.id)}
+            >
+              <span className="flex-1 truncate">{c.title || "New chat"}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteChat(c.id);
+                }}
+                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                aria-label="Delete chat"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {messages.length === 0 ? (
           <div className="space-y-5">
             <div className="flex items-start gap-3">
@@ -190,8 +319,21 @@ export function AskPortfolio() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t p-3 bg-muted/30">
-        <div className="flex items-end gap-2">
+      <div className="border-t bg-muted/30">
+        {messages.length > 0 && (
+          <div className="px-3 pt-3 pb-2 border-b border-border/50 flex gap-2 overflow-x-auto">
+            {SUGGESTED.map((s) => (
+              <button
+                key={s.prompt}
+                onClick={() => fillPrompt(s.prompt)}
+                className="shrink-0 text-xs rounded-full border bg-background px-3 py-1.5 hover:border-primary hover:bg-primary/5 transition-colors"
+              >
+                {s.prompt}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="flex items-end gap-2 p-3">
           <Textarea
             ref={textareaRef}
             value={input}
@@ -211,6 +353,7 @@ export function AskPortfolio() {
           </Button>
         </div>
       </div>
-    </Card>
+      </Card>
+    </div>
   );
 }
