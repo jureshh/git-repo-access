@@ -481,6 +481,7 @@ export default function Dashboard() {
                           {isRed ? "Critical" : "Watch"}
                         </span>
                         <span className="font-semibold text-sm">{a.tenant}</span>
+                        <span className="text-[11px] text-muted-foreground">· {a.building}</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {a.desc} <span className={cn("font-semibold", isRed ? "text-destructive" : "text-warning")}>{a.days} days</span>
