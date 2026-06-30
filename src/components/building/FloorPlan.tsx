@@ -9,119 +9,105 @@ interface Props {
   onSelectUnit: (id: string) => void;
 }
 
-function UnitShape({
+// Architectural site-plan slots arranged around a central circular atrium.
+// Slots are ordered LARGEST → SMALLEST so the largest unit gets the largest
+// footprint regardless of array order in data.ts.
+interface Slot {
+  points: string;       // polygon points
+  cx: number; cy: number; // centroid for number badge + labels
+  textAnchor?: "start" | "middle" | "end";
+}
+
+const SLOTS: Slot[] = [
+  // 1. Largest east wing
+  { points: "590,110 870,140 880,470 575,470 535,355 535,205", cx: 715, cy: 295, textAnchor: "middle" },
+  // 2. Bottom-east wedge
+  { points: "535,355 575,470 760,540 870,540 870,470 575,470", cx: 705, cy: 495, textAnchor: "middle" },
+  // 3. Top spanning band above atrium
+  { points: "320,40 760,40 720,150 540,150 460,180 365,180", cx: 540, cy: 100, textAnchor: "middle" },
+  // 4. Lower-left wing
+  { points: "60,360 195,335 235,425 295,540 60,540", cx: 145, cy: 460, textAnchor: "middle" },
+  // 5. Top-left chunk
+  { points: "60,40 320,40 365,180 320,235 180,240 60,175", cx: 195, cy: 135, textAnchor: "middle" },
+  // 6. Mid-left slim band (yellow #6 in reference)
+  { points: "60,175 180,240 180,335 60,355", cx: 120, cy: 270, textAnchor: "middle" },
+  // 7. Bottom band between wings
+  { points: "295,540 575,470 575,540", cx: 460, cy: 520, textAnchor: "middle" },
+  // 8. Tiny atrium-adjacent wedge (lower-mid)
+  { points: "235,425 320,395 365,460 295,540", cx: 305, cy: 455, textAnchor: "middle" },
+];
+
+// Hatch pattern stripe color per status
+const HATCH: Record<string, { stripe: string; outline: string; bg: string }> = {
+  green:  { stripe: "hsl(var(--success))",            outline: "hsl(var(--success))",            bg: "hsl(var(--success) / 0.10)" },
+  amber:  { stripe: "hsl(var(--warning))",            outline: "hsl(var(--warning))",            bg: "hsl(var(--warning) / 0.10)" },
+  red:    { stripe: "hsl(var(--destructive))",        outline: "hsl(var(--destructive))",        bg: "hsl(var(--destructive) / 0.10)" },
+  grey:   { stripe: "hsl(var(--muted-foreground))",   outline: "hsl(var(--muted-foreground))",   bg: "hsl(var(--muted) / 0.40)" },
+};
+
+function UnitZone({
   unit,
+  slot,
+  index,
   selected,
   onClick,
 }: {
   unit: Unit;
+  slot: Slot;
+  index: number;
   selected: boolean;
   onClick: () => void;
 }) {
-  const fill = STATUS_FILL[unit.status];
-  const isVacant = unit.status === "grey";
-  const narrow = unit.w < 95;
-  const innerW = unit.w - 12;
-  const tenantFs = unit.w < 110 ? (unit.w < 80 ? 9 : 10) : 12;
-  const charW = tenantFs * 0.58;
-  const fitsOneLine = unit.tenant.length * charW <= innerW;
-  const words = unit.tenant.split(" ");
-  const wrap = !fitsOneLine && words.length > 1;
-  const line1 = wrap ? words[0] : unit.tenant;
-  const line2 = wrap ? words.slice(1).join(" ") : "";
-  const metaFs = unit.w < 110 ? 9 : 10;
-  const showWault = !isVacant && !narrow;
-  const showAlert = !!unit.alert && !narrow;
+  const h = HATCH[unit.status];
+  const patternId = `hatch-${unit.status}-${index}`;
   return (
     <g
       onClick={onClick}
       style={{
         cursor: "pointer",
-        filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary)))" : undefined,
+        filter: selected ? "drop-shadow(0 0 10px hsl(var(--primary) / 0.7))" : undefined,
       }}
     >
-      {/* Unit fill */}
-      <rect
-        x={unit.x}
-        y={unit.y}
-        width={unit.w}
-        height={unit.h}
-        rx={2}
-        fill={fill}
-        fillOpacity={isVacant ? 0.18 : 0.18}
-        stroke={selected ? "hsl(var(--primary))" : fill}
+      <defs>
+        <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+          <rect width="8" height="8" fill={h.bg} />
+          <line x1="0" y1="0" x2="0" y2="8" stroke={h.stripe} strokeWidth="2.5" strokeOpacity="0.75" />
+        </pattern>
+      </defs>
+      {/* Hatched fill */}
+      <polygon
+        points={slot.points}
+        fill={`url(#${patternId})`}
+        stroke={selected ? "hsl(var(--primary))" : h.outline}
         strokeWidth={selected ? 3 : 2}
+        strokeLinejoin="round"
       />
-      {/* Status accent bar on top */}
-      <rect
-        x={unit.x}
-        y={unit.y}
-        width={unit.w}
-        height={6}
-        fill={fill}
-        fillOpacity={isVacant ? 0.4 : 1}
-      />
-      <text
-        x={unit.x + 8}
-        y={unit.y + 22}
-        fill="hsl(var(--foreground))"
-        fontSize={tenantFs}
-        fontWeight={700}
-      >
-        {line1}
-        {wrap && (
-          <tspan x={unit.x + 8} dy={tenantFs + 2}>
-            {line2}
-          </tspan>
-        )}
-      </text>
-      <text
-        x={unit.x + 8}
-        y={unit.y + (wrap ? 22 + (tenantFs + 2) + 14 : 38)}
-        fill="hsl(var(--muted-foreground))"
-        fontSize={metaFs}
-      >
-        {unit.sqm.toLocaleString()} sqm
-      </text>
-      {showWault && (
+      {/* Numbered badge */}
+      <g>
+        <circle cx={slot.cx} cy={slot.cy} r={14} fill="hsl(var(--card))" stroke={h.outline} strokeWidth={1.5} />
         <text
-          x={unit.x + unit.w - 8}
-          y={unit.y + unit.h - 8}
-          fill={fill}
-          fontSize={metaFs}
-          fontWeight={600}
-          textAnchor="end"
+          x={slot.cx}
+          y={slot.cy + 4}
+          textAnchor="middle"
+          fontSize={13}
+          fontWeight={700}
+          fill="hsl(var(--foreground))"
         >
-          {unit.wault}
+          {index + 1}
         </text>
-      )}
-      {showAlert && (
-        <g transform={`translate(${unit.x + unit.w - 14}, ${unit.y + 16})`}>
-          <circle cx={0} cy={0} r={8} fill={fill} />
-          <path
-            d="M-3 -3 a3 3 0 0 1 6 0 v2 l1 2 h-8 l1 -2 z M-1.5 2 a1.5 1.5 0 0 0 3 0"
-            fill="none"
-            stroke="white"
-            strokeWidth={1.2}
-            strokeLinejoin="round"
-          />
-        </g>
-      )}
-      <text
-        x={unit.x + 8}
-        y={unit.y + unit.h - 8}
-        fill="hsl(var(--muted-foreground))"
-        fontSize={9}
-        fontWeight={500}
-      >
-        {unit.id}
-      </text>
+      </g>
     </g>
   );
 }
 
 export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }: Props) {
   const units = unitsByFloor[floor];
+  // Map units to slots ordered largest → smallest by sqm so footprint reflects size.
+  const sortedUnits = [...units].sort((a, b) => b.sqm - a.sqm);
+  const slotByUnitId: Record<string, { slot: Slot; index: number }> = {};
+  sortedUnits.forEach((u, i) => {
+    if (SLOTS[i]) slotByUnitId[u.id] = { slot: SLOTS[i], index: i };
+  });
   return (
     <Card className="glass p-3 flex flex-col">
       <div className="flex items-center justify-between mb-2">
@@ -148,101 +134,26 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
 
       <div className="rounded-lg overflow-hidden border border-border bg-muted/30">
         <svg
-          viewBox="0 0 900 480"
+          viewBox="0 0 900 580"
           className="w-full h-auto block"
           preserveAspectRatio="xMidYMid meet"
         >
-          <defs>
-            <pattern
-              id="floorGrid"
-              width="20"
-              height="20"
-              patternUnits="userSpaceOnUse"
-            >
-              <path
-                d="M 20 0 L 0 0 0 20"
-                fill="none"
-                stroke="hsl(var(--border))"
-                strokeWidth="0.5"
-              />
-            </pattern>
-          </defs>
+          {/* Building zone labels */}
+          <text x={760} y={28} fontSize={13} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="end" letterSpacing="1">
+            EAST WING
+          </text>
+          <text x={140} y={28} fontSize={13} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="start" letterSpacing="1">
+            WEST WING
+          </text>
+          <text x={450} y={570} fontSize={13} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="middle" letterSpacing="1">
+            SOUTH PROMENADE
+          </text>
 
-          {/* Building outline / shell */}
-          <rect
-            x={8}
-            y={8}
-            width={884}
-            height={464}
-            rx={4}
-            fill="hsl(var(--card))"
-            stroke="hsl(var(--border))"
-            strokeWidth={1}
-          />
-          <rect x={8} y={8} width={884} height={464} fill="url(#floorGrid)" />
-
-          {/* Corridor (Common Area) — horizontal spine + small offshoots */}
-          <g>
-            <rect
-              x={250}
-              y={192}
-              width={634}
-              height={104}
-              fill="hsl(var(--muted))"
-              stroke="hsl(var(--border))"
-              strokeWidth={1}
-            />
-            <text
-              x={567}
-              y={248}
-              fill="hsl(var(--muted-foreground))"
-              fontSize={12}
-              fontWeight={500}
-              textAnchor="middle"
-              letterSpacing="2"
-            >
-              COMMON AREA
-            </text>
-
-            {/* Escalator markers */}
-            <g transform="translate(420, 218)">
-              <rect width={56} height={52} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-              <path
-                d="M6 46 L50 6 M14 46 L50 14 M22 46 L50 22"
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth={1.5}
-                fill="none"
-              />
-              <text x={28} y={62} fontSize={7} fill="hsl(var(--muted-foreground))" textAnchor="middle">
-                ESC
-              </text>
-            </g>
-
-            {/* Restrooms / utility */}
-            <g transform="translate(680, 218)">
-              <rect width={44} height={52} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-              <text x={22} y={32} fontSize={11} fill="hsl(var(--muted-foreground))" textAnchor="middle">
-                WC
-              </text>
-            </g>
-
-            {/* Stairs */}
-            <g transform="translate(800, 218)">
-              <rect width={44} height={52} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-              <path
-                d="M4 48 H40 M4 40 H40 M4 32 H40 M4 24 H40 M4 16 H40 M4 8 H40"
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth={0.8}
-                fill="none"
-              />
-            </g>
-          </g>
-
-          {/* Units */}
+          {/* Units (architectural zones) */}
           {units.length === 0 ? (
             <text
               x={450}
-              y={240}
+              y={290}
               fill="hsl(var(--muted-foreground))"
               fontSize={16}
               textAnchor="middle"
@@ -250,25 +161,72 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
               No unit data for this floor
             </text>
           ) : (
-            units.map((u) => (
-              <UnitShape
-                key={u.id}
-                unit={u}
-                selected={u.id === selectedUnitId}
-                onClick={() => onSelectUnit(u.id)}
-              />
-            ))
+            units.map((u) => {
+              const placement = slotByUnitId[u.id];
+              if (!placement) return null;
+              return (
+                <UnitZone
+                  key={u.id}
+                  unit={u}
+                  slot={placement.slot}
+                  index={placement.index}
+                  selected={u.id === selectedUnitId}
+                  onClick={() => onSelectUnit(u.id)}
+                />
+              );
+            })
           )}
 
-          {/* Compass + scale */}
-          <g transform="translate(840, 36)">
-            <circle cx={0} cy={0} r={14} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-            <path d="M0 -10 L4 4 L0 0 L-4 4 Z" fill="hsl(var(--foreground))" />
-            <text x={0} y={-16} fontSize={8} fill="hsl(var(--muted-foreground))" textAnchor="middle">
+          {/* Central atrium */}
+          <g>
+            <ellipse
+              cx={440}
+              cy={290}
+              rx={108}
+              ry={88}
+              fill="hsl(var(--card))"
+              stroke="hsl(var(--border))"
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+            />
+            <text x={440} y={285} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" letterSpacing="2">
+              CENTRAL
+            </text>
+            <text x={440} y={302} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" letterSpacing="2">
+              ATRIUM
+            </text>
+          </g>
+
+          {/* Compass */}
+          <g transform="translate(845, 50)">
+            <circle cx={0} cy={0} r={16} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
+            <path d="M0 -12 L5 5 L0 1 L-5 5 Z" fill="hsl(var(--foreground))" />
+            <text x={0} y={-20} fontSize={9} fill="hsl(var(--muted-foreground))" textAnchor="middle" fontWeight={600}>
               N
             </text>
           </g>
         </svg>
+
+        {/* Legend: unit number → tenant */}
+        <div className="border-t border-border bg-card/50 px-3 py-2 grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-1 text-[11px]">
+          {[...units].sort((a, b) => b.sqm - a.sqm).map((u, i) => (
+            <button
+              key={u.id}
+              onClick={() => onSelectUnit(u.id)}
+              className={`flex items-center gap-1.5 text-left hover:text-foreground transition-colors ${
+                u.id === selectedUnitId ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+            >
+              <span
+                className="inline-flex items-center justify-center h-4 w-4 rounded-full text-[9px] font-bold border"
+                style={{ borderColor: STATUS_FILL[u.status], color: "hsl(var(--foreground))" }}
+              >
+                {i + 1}
+              </span>
+              <span className="truncate">{u.tenant}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </Card>
   );
