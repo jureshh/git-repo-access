@@ -12,11 +12,12 @@ import {
 } from "@/components/leasereview/data";
 import { SourcePanel } from "@/components/leasereview/SourcePanel";
 import { useFormatRent } from "@/lib/currency";
+import { AskPortfolio } from "@/components/leasereview/AskPortfolio";
 
 const RENT_FIELDS = new Set<FieldKey>(["annualRent", "effectiveRent", "guaranteeAmount"]);
 const PER_M2_FIELDS = new Set<FieldKey>(["baseRent"]);
 
-type ViewMode = "portfolio" | "lease";
+type ViewMode = "portfolio" | "lease" | "ask";
 
 function cellTone(field: FieldKey, value: string): string {
   if (value === "None" || value === "—" || value === "") return "text-muted-foreground";
@@ -91,7 +92,10 @@ export default function LeaseReview() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[63fr_37fr] gap-6 items-start">
+        <div className={cn(
+          "grid grid-cols-1 gap-6 items-start",
+          view !== "ask" && "lg:grid-cols-[63fr_37fr]"
+        )}>
           {/* Left: table */}
           <div className="space-y-3 min-w-0">
             {/* Toolbar */}
@@ -115,6 +119,15 @@ export default function LeaseReview() {
                 >
                   Lease View
                 </button>
+                <button
+                  onClick={() => setView("ask")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                    view === "ask" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Ask Portfolio
+                </button>
               </div>
               <div className="flex items-center gap-2">
                 {view === "lease" && (
@@ -127,6 +140,7 @@ export default function LeaseReview() {
                     </SelectContent>
                   </Select>
                 )}
+                {view !== "ask" && (
                 <Select value={filter} onValueChange={setFilter}>
                   <SelectTrigger className="w-[150px] h-9 text-xs">
                     <SelectValue />
@@ -137,10 +151,14 @@ export default function LeaseReview() {
                     ))}
                   </SelectContent>
                 </Select>
+                )}
               </div>
             </div>
 
-            {/* Table */}
+            {/* Table or chat */}
+            {view === "ask" ? (
+              <AskPortfolio />
+            ) : (
             <Card className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs border-collapse">
@@ -206,9 +224,11 @@ export default function LeaseReview() {
                 </table>
               </div>
             </Card>
+            )}
           </div>
 
-          {/* Right: source panel - sticky */}
+          {/* Right: source panel - sticky (hidden in chat mode) */}
+          {view !== "ask" && (
           <div className="lg:sticky lg:top-24">
             <SourcePanel
               fieldKey={selected?.field ?? null}
@@ -217,6 +237,7 @@ export default function LeaseReview() {
               value={selectedValue}
             />
           </div>
+          )}
         </div>
       </div>
     </div>

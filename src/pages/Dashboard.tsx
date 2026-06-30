@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import {
@@ -16,7 +16,7 @@ import { FloorPlan } from "@/components/building/FloorPlan";
 import { LeaseDetailPanel } from "@/components/building/LeaseDetailPanel";
 import { UnitTable } from "@/components/building/UnitTable";
 import { Floor, unitsByFloor } from "@/components/building/data";
-import { Badge } from "@/components/ui/badge";
+import { PORTFOLIO, portfolioTotals, portfolioExpiryByYear, portfolioAlerts } from "@/lib/portfolio";
 
 const C = {
   teal: "hsl(var(--primary))",
@@ -48,7 +48,7 @@ function KpiTile({ label, value, sub, tone, onClick, detail }: KpiProps) {
   );
 }
 
-const expiryData = [
+const buildingExpiryData = [
   { year: "2026", sqm: 255, color: C.red },
   { year: "2027", sqm: 850, color: C.amber },
   { year: "2028", sqm: 620, color: C.amber },
@@ -123,23 +123,30 @@ export default function Dashboard() {
   const [leadMonths, setLeadMonths] = useState<number>(12);
 
   // Building drill-down state
-  const [selectedBuilding, setSelectedBuilding] = useState<string>("galeria-orkana");
+  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [floor, setFloor] = useState<Floor>("2");
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>("2-B1");
   const buildingSectionRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
-  const liveBuilding = BUILDINGS.find((b) => b.id === selectedBuilding && b.live);
+  const activeBuilding = selectedBuilding ? BUILDINGS.find((b) => b.id === selectedBuilding) : null;
+  const activePortfolio = selectedBuilding ? PORTFOLIO.find((b) => b.id === selectedBuilding) : null;
+  const liveBuilding = activeBuilding?.live ? activeBuilding : null;
   const units = unitsByFloor[floor];
   const selectedUnit = units.find((u) => u.id === selectedUnitId) ?? null;
   const filteredUnits = selectedUnit ? units.filter((u) => u.id === selectedUnit.id) : units;
 
-  const handleSelectBuilding = (id: string) => {
+  const handleSelectBuilding = (id: string | null) => {
     setSelectedBuilding(id);
-    // Auto-scroll to the building detail section
-    setTimeout(() => {
-      buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
+    if (id) {
+      setTimeout(() => {
+        buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    } else {
+      setTimeout(() => {
+        topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    }
   };
 
   const handleSelectTenantFromChart = (tenantName: string) => {
@@ -152,18 +159,78 @@ export default function Dashboard() {
     }
   };
 
-  const visibleAlerts = useMemo(
-    () => alerts.filter((a) => a.days <= leadMonths * 30),
-    [leadMonths]
-  );
+  // Portfolio mode = no building selected
+  const portfolioMode = !selectedBuilding;
+  const totals = useMemo(() => portfolioTotals(), []);
 
-  // GRI / NOI in PLN
-  const griPln = 11_680_000;
-  const noiPln = 8_410_000;
+  // KPI numbers depend on mode (portfolio totals vs. Galeria Orkana building)
+  const griPln = portfolioMode ? totals.griPln : 11_680_000;
+  const noiPln = portfolioMode ? totals.noiPln : 8_410_000;
   const griFmt = fmtRent(griPln, { compact: true });
   const griMonthly = fmtRent(griPln / 12, { compact: true });
   const noiFmt = fmtRent(noiPln, { compact: true });
   const noiMonthly = fmtRent(noiPln / 12, { compact: true });
+
+  const waultLabel = portfolioMode ? `${totals.waultGriWeighted.toFixed(1)} yrs` : "4.2 yrs";
+  const noiYieldLabel = portfolioMode ? `${(totals.noiYield * 100).toFixed(1)}%` : "6.3%";
+  const noiYieldSub = portfolioMode
+    ? `NOI at assumed PLN 780M aggregate value`
+    : "NOI at PLN 134.5M asset value";
+  const occLabel = portfolioMode ? `${(totals.occupancy * 100).toFixed(1)}%` : "93.2%";
+  const occSub = portfolioMode
+    ? `${Math.round(totals.occupiedGla).toLocaleString()} of ${totals.gla.toLocaleString()} sqm · 5 buildings`
+    : "17,200 of 18,450 sqm";
+
+  // Alerts: portfolio-wide vs single building (Galeria Orkana only)
+  const allAlerts = portfolioMode
+    ? portfolioAlerts
+    : portfolioAlerts.filter((a) => a.building === (activePortfolio?.name ?? ""));
+  const visibleAlerts = useMemo(
+    () => allAlerts.filter((a) => a.days <= leadMonths * 30),
+    [allAlerts, leadMonths]
+  );
+
+  // Annual Rent by Building (portfolio mode), sorted desc, color by WAULT tier
+  const rentByBuilding = useMemo(() => {
+    const tone = (w: number) => (w < 1 ? C.red : w < 3 ? C.amber : C.green);
+    return [...PORTFOLIO]
+      .sort((a, b) => b.griPln - a.griPln)
+      .map((b) => ({ name: b.name, value: b.griPln, wault: b.wault, color: tone(b.wault) }));
+  }, []);
+
+  // Building Expiry Risk Matrix (portfolio mode)
+  const buildingRiskData = useMemo(() => {
+    const tone = (w: number) => (w < 1 ? "#ef4444" : w < 3 ? "#f59e0b" : "#22c55e");
+    return PORTFOLIO.map((b) => ({
+      tenant: b.name,
+      years: b.wault,
+      actualYears: b.wault,
+      rent: b.griPln,
+      gla: b.gla,
+      color: tone(b.wault),
+    }));
+  }, []);
+
+  // Conditional chart data sources
+  const portfolioExpiryColored = portfolioExpiryByYear.map((d) => ({
+    ...d,
+    color: d.year === "2026" ? C.red : ["2027", "2028"].includes(d.year) ? C.amber : C.teal,
+  }));
+  const chartExpiry = portfolioMode ? portfolioExpiryColored : buildingExpiryData;
+  const chartRent = portfolioMode
+    ? rentByBuilding.map((b) => ({ tenant: b.name, value: b.value, color: b.color }))
+    : rentData;
+  const chartRisk = portfolioMode ? buildingRiskData : expiryRiskData;
+  const rentChartTitle = portfolioMode
+    ? `Annual Rent by Building (${display})`
+    : `Annual Rent by Tenant (${display})`;
+  const riskChartTitle = portfolioMode
+    ? "Building Expiry Risk Matrix (0–10 Years)"
+    : "Tenant Expiry Risk Matrix (0–10 Years)";
+  const allowChartClick = !portfolioMode;
+
+  // If a non-live building is selected, render only the BuildingNavBar + simplified card.
+  const showSimplifiedOnly = activeBuilding && !activeBuilding.live;
 
   return (
     <div className="py-8 lg:py-12">
@@ -176,20 +243,42 @@ export default function Dashboard() {
         {/* Building navigation bar */}
         <BuildingNavBar selectedId={selectedBuilding} onSelect={handleSelectBuilding} />
 
-        {/* Portfolio scope notice */}
+        {/* Mode banner */}
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="text-[11px] font-medium">
-            Portfolio-level KPIs
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            Reflects 1 of 5 properties (Galeria Orkana) — additional properties pending integration.
-          </span>
+          {portfolioMode ? (
+            <span className="text-xs text-muted-foreground">
+              Portfolio Overview · aggregated across {PORTFOLIO.length} buildings. Select a building to drill in.
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              Building Detail · {activePortfolio?.name}{activePortfolio ? ` (${activePortfolio.city})` : ""}
+            </span>
+          )}
         </div>
+
+        {/* Simplified summary card for non-live buildings */}
+        {showSimplifiedOnly && activePortfolio && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <KpiTile label="GLA" value={`${activePortfolio.gla.toLocaleString()} m²`} sub="Gross leasable area" tone={C.teal} />
+              <KpiTile label="Occupied" value={`${(activePortfolio.occupied * 100).toFixed(1)}%`} sub={`${Math.round(activePortfolio.gla * activePortfolio.occupied).toLocaleString()} m² let`} tone={C.green} />
+              <KpiTile label="WAULT" value={`${activePortfolio.wault} yrs`} sub="Weighted avg unexpired lease term" tone={C.teal} />
+              <KpiTile label="GRI" value={fmtRent(activePortfolio.griPln, { compact: true }).primary} sub={fmtRent(activePortfolio.griPln, { compact: true }).secondary} tone={C.green} />
+              <KpiTile label="NOI" value={fmtRent(activePortfolio.noiPln, { compact: true }).primary} sub={fmtRent(activePortfolio.noiPln, { compact: true }).secondary} tone={C.blue} />
+            </div>
+            <Card className="p-5 text-sm text-muted-foreground">
+              Full lease-level detail for this property is pending integration.
+            </Card>
+          </>
+        )}
+
+        {!showSimplifiedOnly && (
+          <>
 
         {/* KPI row */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <KpiTile label="WAULT" value="4.2 yrs" sub="Weighted avg unexpired lease term" tone={C.teal} />
-          <KpiTile label="Current NOI Yield" value="6.3%" sub="NOI at PLN 134.5M asset value" tone={C.teal} />
+          <KpiTile label="WAULT" value={waultLabel} sub={portfolioMode ? "GRI-weighted across portfolio" : "Weighted avg unexpired lease term"} tone={C.teal} />
+          <KpiTile label="Current NOI Yield" value={noiYieldLabel} sub={noiYieldSub} tone={C.teal} />
           <KpiTile
             label="GRI"
             value={griFmt.primary}
@@ -204,7 +293,7 @@ export default function Dashboard() {
             detail={`${noiMonthly.primary}/mo · 72.0% NOI margin`}
             tone={C.blue}
           />
-          <KpiTile label="Occupied GLA" value="93.2%" sub="17,200 of 18,450 sqm" tone={C.green} />
+          <KpiTile label="Occupied GLA" value={occLabel} sub={occSub} tone={C.green} />
         </div>
 
         {/* Charts row 1 */}
@@ -212,13 +301,13 @@ export default function Dashboard() {
           <Card className="p-5">
             <h3 className="text-base font-display font-semibold mb-4">Lease Expiry by Year (sqm)</h3>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={expiryData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+              <BarChart data={chartExpiry} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="year" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
                 <Tooltip cursor={{ fill: "hsl(var(--muted))" }} formatter={(v: number) => [`${v} sqm`, "Expiring"]} />
                 <Bar dataKey="sqm" radius={[6, 6, 0, 0]}>
-                  {expiryData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  {chartExpiry.map((d, i) => <Cell key={i} fill={d.color} />)}
                   <LabelList dataKey="sqm" position="top" style={{ fontSize: 11, fill: "hsl(var(--foreground))" }} />
                 </Bar>
               </BarChart>
@@ -227,11 +316,13 @@ export default function Dashboard() {
 
           <Card className="p-5">
             <h3 className="text-base font-display font-semibold mb-1">
-              Annual Rent by Tenant ({display})
+              {rentChartTitle}
             </h3>
-            <p className="text-xs text-muted-foreground mb-3">Hover for monthly equivalent.</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              {portfolioMode ? "Sorted descending by GRI · colored by WAULT risk tier." : "Hover for monthly equivalent."}
+            </p>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={rentData} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 5 }}>
+              <BarChart data={chartRent} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
                 <YAxis dataKey="tenant" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={110} />
@@ -252,10 +343,10 @@ export default function Dashboard() {
                 <Bar
                   dataKey="value"
                   radius={[0, 6, 6, 0]}
-                  cursor="pointer"
-                  onClick={(d: { tenant?: string } | undefined) => d?.tenant && handleSelectTenantFromChart(d.tenant)}
+                  cursor={allowChartClick ? "pointer" : "default"}
+                  onClick={(d: { tenant?: string } | undefined) => allowChartClick && d?.tenant && handleSelectTenantFromChart(d.tenant)}
                 >
-                  {rentData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  {chartRent.map((d, i) => <Cell key={i} fill={d.color} />)}
                   <LabelList dataKey="value" position="right" formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 </Bar>
               </BarChart>
@@ -266,9 +357,11 @@ export default function Dashboard() {
         {/* WAULT + Alerts */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-5">
-            <h3 className="text-base font-display font-semibold">Tenant Expiry Risk Matrix (0–10 Years)</h3>
+            <h3 className="text-base font-display font-semibold">{riskChartTitle}</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Bubble size = GLA. Position = years until lease expiry vs annual rent.
+              {portfolioMode
+                ? "Bubble size = GLA. Position = building WAULT vs GRI."
+                : "Bubble size = GLA. Position = years until lease expiry vs annual rent."}
             </p>
             <ResponsiveContainer width="100%" height={320}>
               <ScatterChart margin={{ top: 16, right: 30, left: 10, bottom: 28 }}>
@@ -286,25 +379,25 @@ export default function Dashboard() {
                 <YAxis
                   type="number"
                   dataKey="rent"
-                  name="Annual Rent"
+                  name={portfolioMode ? "GRI" : "Annual Rent"}
                   tick={{ fontSize: 10 }}
                   stroke="hsl(var(--muted-foreground))"
                   tickFormatter={(v) => fmtCompact(v)}
-                  label={{ value: `Annual Rent (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
+                  label={{ value: `${portfolioMode ? "GRI" : "Annual Rent"} (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
                 />
-                <ZAxis type="number" dataKey="gla" domain={[50, 2000]} range={[60, 1600]} name="GLA" />
+                <ZAxis type="number" dataKey="gla" domain={portfolioMode ? [10_000, 40_000] : [50, 2000]} range={[80, 2400]} name="GLA" />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as typeof expiryRiskData[number];
-                    const waultLabel = `${d.actualYears} yrs`;
+                    const wLabel = `${d.actualYears} yrs`;
                     const tier = d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable";
                     const am = fmtAM(d.rent);
                     return (
                       <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
                         <div className="font-semibold mb-1">{d.tenant}</div>
-                        <div>WAULT: {waultLabel}</div>
+                        <div>WAULT: {wLabel}</div>
                         <div>{am.primary}</div>
                         <div className="text-muted-foreground">{am.secondary}</div>
                         <div>GLA: {d.gla.toLocaleString()} m²</div>
@@ -328,8 +421,8 @@ export default function Dashboard() {
                   strokeDasharray="4 4"
                   label={{ value: "Watch", position: "top", fill: "#f59e0b", fontSize: 10 }}
                 />
-                <Scatter data={expiryRiskData}>
-                  {expiryRiskData.map((d, i) => (
+                <Scatter data={chartRisk}>
+                  {chartRisk.map((d, i) => (
                     <Cell key={i} fill={d.color} fillOpacity={0.7} stroke={d.color} />
                   ))}
                   <LabelList
@@ -388,6 +481,7 @@ export default function Dashboard() {
                           {isRed ? "Critical" : "Watch"}
                         </span>
                         <span className="font-semibold text-sm">{a.tenant}</span>
+                        <span className="text-[11px] text-muted-foreground">· {a.building}</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {a.desc} <span className={cn("font-semibold", isRed ? "text-destructive" : "text-warning")}>{a.days} days</span>
@@ -408,6 +502,39 @@ export default function Dashboard() {
           <h3 className="text-base font-display font-semibold">Financial Summary</h3>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
+              {portfolioMode ? (
+              <table className="w-full text-xs">
+                <thead className="bg-muted/60">
+                  <tr className="text-left">
+                    {["Building", "GLA (sqm)", `GRI (${curSym}/yr)`, `NOI (${curSym}/yr)`, "Occupied %", "WAULT", "Next Major Expiry"].map((h) => (
+                      <th key={h} className="px-3 py-2.5 font-semibold border-b whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {PORTFOLIO.map((b, i) => (
+                    <tr key={b.id} className={cn(i % 2 === 1 ? "bg-muted/20" : "bg-card", "border-b")}>
+                      <td className="px-3 py-2 font-medium">{b.name}</td>
+                      <td className="px-3 py-2 font-mono">{fmt(b.gla)}</td>
+                      <td className="px-3 py-2 font-mono">{fmt(Math.round(convCur(b.griPln)))}</td>
+                      <td className="px-3 py-2 font-mono">{fmt(Math.round(convCur(b.noiPln)))}</td>
+                      <td className="px-3 py-2 font-mono">{(b.occupied * 100).toFixed(1)}%</td>
+                      <td className="px-3 py-2 font-mono">{b.wault}</td>
+                      <td className="px-3 py-2">{b.nextMajorExpiry}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-muted/60 font-semibold border-t-2">
+                    <td className="px-3 py-2.5">Total</td>
+                    <td className="px-3 py-2.5 font-mono">{fmt(totals.gla)}</td>
+                    <td className="px-3 py-2.5 font-mono">{fmt(Math.round(convCur(totals.griPln)))}</td>
+                    <td className="px-3 py-2.5 font-mono">{fmt(Math.round(convCur(totals.noiPln)))}</td>
+                    <td className="px-3 py-2.5 font-mono">{(totals.occupancy * 100).toFixed(1)}%</td>
+                    <td className="px-3 py-2.5 font-mono">{totals.waultGriWeighted.toFixed(1)}</td>
+                    <td className="px-3 py-2.5">—</td>
+                  </tr>
+                </tbody>
+              </table>
+              ) : (
               <table className="w-full text-xs">
                 <thead className="bg-muted/60">
                    <tr className="text-left">
@@ -447,17 +574,18 @@ export default function Dashboard() {
                    </tr>
                 </tbody>
               </table>
+              )}
             </div>
           </Card>
 
           <div className="grid md:grid-cols-2 gap-4">
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Current NOI Yield</p>
-              <p className="text-sm">6.3% — NOI at assumed asset value of PLN 134.5M</p>
+              <p className="text-sm">{noiYieldLabel} — {noiYieldSub}</p>
             </Card>
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Identified Leakage</p>
-              <p className="text-sm">PLN 18,000/yr — Café Roma effective rent below headline (Annex 2 rent-free)</p>
+              <p className="text-sm">{portfolioMode ? "PLN 18,000/yr — Café Roma (Galeria Orkana) effective rent below headline (Annex 2 rent-free)" : "PLN 18,000/yr — Café Roma effective rent below headline (Annex 2 rent-free)"}</p>
             </Card>
           </div>
 
@@ -465,6 +593,8 @@ export default function Dashboard() {
             Data extracted: 22 May 2026 · LeaseOS Demo Mode
           </p>
         </div>
+        </>
+        )}
 
         {/* Building Detail Section (only when a live building is selected) */}
         {liveBuilding && (
