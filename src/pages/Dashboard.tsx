@@ -122,6 +122,36 @@ export default function Dashboard() {
   const convCur = (pln: number) => (display === "EUR" ? pln / rate : pln);
   const [leadMonths, setLeadMonths] = useState<number>(12);
 
+  // Building drill-down state
+  const [selectedBuilding, setSelectedBuilding] = useState<string>("galeria-orkana");
+  const [floor, setFloor] = useState<Floor>("2");
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>("2-B1");
+  const buildingSectionRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  const liveBuilding = BUILDINGS.find((b) => b.id === selectedBuilding && b.live);
+  const units = unitsByFloor[floor];
+  const selectedUnit = units.find((u) => u.id === selectedUnitId) ?? null;
+  const filteredUnits = selectedUnit ? units.filter((u) => u.id === selectedUnit.id) : units;
+
+  const handleSelectBuilding = (id: string) => {
+    setSelectedBuilding(id);
+    // Auto-scroll to the building detail section
+    setTimeout(() => {
+      buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  };
+
+  const handleSelectTenantFromChart = (tenantName: string) => {
+    const match = units.find((u) => u.tenant === tenantName);
+    if (match) {
+      setSelectedUnitId(match.id);
+      setTimeout(() => {
+        buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    }
+  };
+
   const visibleAlerts = useMemo(
     () => alerts.filter((a) => a.days <= leadMonths * 30),
     [leadMonths]
