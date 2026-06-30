@@ -502,6 +502,39 @@ export default function Dashboard() {
           <h3 className="text-base font-display font-semibold">Financial Summary</h3>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
+              {portfolioMode ? (
+              <table className="w-full text-xs">
+                <thead className="bg-muted/60">
+                  <tr className="text-left">
+                    {["Building", "GLA (sqm)", `GRI (${curSym}/yr)`, `NOI (${curSym}/yr)`, "Occupied %", "WAULT", "Next Major Expiry"].map((h) => (
+                      <th key={h} className="px-3 py-2.5 font-semibold border-b whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {PORTFOLIO.map((b, i) => (
+                    <tr key={b.id} className={cn(i % 2 === 1 ? "bg-muted/20" : "bg-card", "border-b")}>
+                      <td className="px-3 py-2 font-medium">{b.name}</td>
+                      <td className="px-3 py-2 font-mono">{fmt(b.gla)}</td>
+                      <td className="px-3 py-2 font-mono">{fmt(Math.round(convCur(b.griPln)))}</td>
+                      <td className="px-3 py-2 font-mono">{fmt(Math.round(convCur(b.noiPln)))}</td>
+                      <td className="px-3 py-2 font-mono">{(b.occupied * 100).toFixed(1)}%</td>
+                      <td className="px-3 py-2 font-mono">{b.wault}</td>
+                      <td className="px-3 py-2">{b.nextMajorExpiry}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-muted/60 font-semibold border-t-2">
+                    <td className="px-3 py-2.5">Total</td>
+                    <td className="px-3 py-2.5 font-mono">{fmt(totals.gla)}</td>
+                    <td className="px-3 py-2.5 font-mono">{fmt(Math.round(convCur(totals.griPln)))}</td>
+                    <td className="px-3 py-2.5 font-mono">{fmt(Math.round(convCur(totals.noiPln)))}</td>
+                    <td className="px-3 py-2.5 font-mono">{(totals.occupancy * 100).toFixed(1)}%</td>
+                    <td className="px-3 py-2.5 font-mono">{totals.waultGriWeighted.toFixed(1)}</td>
+                    <td className="px-3 py-2.5">—</td>
+                  </tr>
+                </tbody>
+              </table>
+              ) : (
               <table className="w-full text-xs">
                 <thead className="bg-muted/60">
                    <tr className="text-left">
@@ -541,17 +574,18 @@ export default function Dashboard() {
                    </tr>
                 </tbody>
               </table>
+              )}
             </div>
           </Card>
 
           <div className="grid md:grid-cols-2 gap-4">
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Current NOI Yield</p>
-              <p className="text-sm">6.3% — NOI at assumed asset value of PLN 134.5M</p>
+              <p className="text-sm">{noiYieldLabel} — {noiYieldSub}</p>
             </Card>
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Identified Leakage</p>
-              <p className="text-sm">PLN 18,000/yr — Café Roma effective rent below headline (Annex 2 rent-free)</p>
+              <p className="text-sm">{portfolioMode ? "PLN 18,000/yr — Café Roma (Galeria Orkana) effective rent below headline (Annex 2 rent-free)" : "PLN 18,000/yr — Café Roma effective rent below headline (Annex 2 rent-free)"}</p>
             </Card>
           </div>
 
@@ -559,6 +593,8 @@ export default function Dashboard() {
             Data extracted: 22 May 2026 · LeaseOS Demo Mode
           </p>
         </div>
+        </>
+        )}
 
         {/* Building Detail Section (only when a live building is selected) */}
         {liveBuilding && (
