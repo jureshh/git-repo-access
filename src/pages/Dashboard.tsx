@@ -1,6 +1,10 @@
-import { useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useFormatRent, useFormatAnnualMonthly, useFormatCompact, useCurrency } from "@/lib/currency";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LabelList, Cell, ReferenceLine, ScatterChart, Scatter, ZAxis, ReferenceArea,
@@ -58,7 +62,7 @@ const rentData = [
 ];
 
 const bubbleColor = (years: number) =>
-  years < 1 ? "#ef4444" : years < 2.5 ? "#f59e0b" : "#22c55e";
+  years < 1 ? "#ef4444" : years < 3 ? "#f59e0b" : "#22c55e";
 
 const expiryRiskData = [
   { tenant: "Jewellery Co", years: 0.4, actualYears: 0.4, rent: 112_500, gla: 75 },
@@ -72,14 +76,20 @@ const expiryRiskData = [
   { tenant: "Book Store", years: 3.2, actualYears: 3.2, rent: 320_000, gla: 400 },
   { tenant: "Home & Living", years: 4.1, actualYears: 4.1, rent: 450_000, gla: 550 },
   { tenant: "Optika Centrum", years: 4.8, actualYears: 4.8, rent: 99_750, gla: 95 },
-  { tenant: "Anchor – Fashion", years: 5, actualYears: 6.1, rent: 1_260_000, gla: 1800 },
-  { tenant: "Fashion Outlet", years: 5, actualYears: 5.4, rent: 840_000, gla: 1200 },
+  { tenant: "Anchor – Fashion", years: 6.1, actualYears: 6.1, rent: 1_260_000, gla: 1800 },
+  { tenant: "Fashion Outlet", years: 5.4, actualYears: 5.4, rent: 840_000, gla: 1200 },
+  { tenant: "Pharmacy Plus", years: 7.1, actualYears: 7.1, rent: 410_000, gla: 480 },
+  { tenant: "Anchor – Grocery", years: 8.5, actualYears: 8.5, rent: 1_050_000, gla: 1600 },
+  { tenant: "Flagship Electronics", years: 9.2, actualYears: 9.2, rent: 720_000, gla: 900 },
 ].map((d) => ({ ...d, color: bubbleColor(d.actualYears) }));
 
 const alerts = [
   { tone: "red", tenant: "Café Roma", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
   { tone: "red", tenant: "Jewellery Co", desc: "Bank guarantee expires in", days: 63, source: "§14.1 p.31" },
   { tone: "amber", tenant: "Sport Zone", desc: "Bank guarantee expires in", days: 187, source: "§12.3 p.29" },
+  { tone: "amber", tenant: "Electronics Plus", desc: "Landlord break option exercisable in", days: 365, source: "§8.5 p.26" },
+  { tone: "amber", tenant: "Kids World", desc: "Lease expiry in", days: 540, source: "§3.1 p.6" },
+  { tone: "amber", tenant: "Optika Centrum", desc: "Indexation review in", days: 705, source: "§6.3 p.18" },
 ];
 
 const financialRows = [
@@ -97,6 +107,24 @@ const fmt = (n: number) => n.toLocaleString();
 export default function Dashboard() {
   const navigate = useNavigate();
   const alertsRef = useRef<HTMLDivElement>(null);
+  const fmtRent = useFormatRent();
+  const fmtAM = useFormatAnnualMonthly();
+  const fmtCompact = useFormatCompact();
+  const { display } = useCurrency();
+  const [leadMonths, setLeadMonths] = useState<number>(12);
+
+  const visibleAlerts = useMemo(
+    () => alerts.filter((a) => a.days <= leadMonths * 30),
+    [leadMonths]
+  );
+
+  // GRI / NOI in PLN
+  const griPln = 11_680_000;
+  const noiPln = 8_410_000;
+  const griFmt = fmtRent(griPln, { compact: true });
+  const griMonthly = fmtRent(griPln / 12, { compact: true });
+  const noiFmt = fmtRent(noiPln, { compact: true });
+  const noiMonthly = fmtRent(noiPln / 12, { compact: true });
 
   return (
     <div className="py-8 lg:py-12">
@@ -110,8 +138,20 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <KpiTile label="Portfolio WAULT" value="4.2 yrs" sub="Weighted avg unexpired lease term" tone={C.teal} />
           <KpiTile label="Current NOI Yield" value="6.3%" sub="NOI at PLN 134.5M asset value" tone={C.teal} />
-          <KpiTile label="GRI" value="PLN 11.68M" sub="Base rent + turnover + service charge" tone={C.green} />
-          <KpiTile label="NOI" value="PLN 8.41M" sub="Net Operating Income" detail="72.0% NOI margin" tone={C.blue} />
+          <KpiTile
+            label="GRI"
+            value={griFmt.primary}
+            sub={griFmt.secondary}
+            detail={`${griMonthly.primary}/mo · Base + turnover + SC`}
+            tone={C.green}
+          />
+          <KpiTile
+            label="NOI"
+            value={noiFmt.primary}
+            sub={noiFmt.secondary}
+            detail={`${noiMonthly.primary}/mo · 72.0% NOI margin`}
+            tone={C.blue}
+          />
           <KpiTile label="Occupied GLA" value="93.2%" sub="17,200 of 18,450 sqm" tone={C.green} />
         </div>
 
@@ -134,16 +174,32 @@ export default function Dashboard() {
           </Card>
 
           <Card className="p-5">
-            <h3 className="text-base font-display font-semibold mb-4">Annual Rent by Tenant (PLN)</h3>
+            <h3 className="text-base font-display font-semibold mb-1">
+              Annual Rent by Tenant ({display})
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">Hover for monthly equivalent.</p>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={rentData} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v/1000).toFixed(0)}K`} />
+                <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
                 <YAxis dataKey="tenant" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={110} />
-                <Tooltip formatter={(v: number) => [`PLN ${v.toLocaleString()}`, "Annual"]} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload as { tenant: string; value: number };
+                    const a = fmtAM(d.value);
+                    return (
+                      <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
+                        <div className="font-semibold mb-1">{d.tenant}</div>
+                        <div>{a.primary}</div>
+                        <div className="text-muted-foreground">{a.secondary}</div>
+                      </div>
+                    );
+                  }}
+                />
                 <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                   {rentData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                  <LabelList dataKey="value" position="right" formatter={(v: number) => v.toLocaleString()} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
+                  <LabelList dataKey="value" position="right" formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -153,7 +209,7 @@ export default function Dashboard() {
         {/* WAULT + Alerts */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-5">
-            <h3 className="text-base font-display font-semibold">Tenant Expiry Risk Matrix (0–5 Years)</h3>
+            <h3 className="text-base font-display font-semibold">Tenant Expiry Risk Matrix (0–10 Years)</h3>
             <p className="text-xs text-muted-foreground mb-4">
               Bubble size = GLA. Position = years until lease expiry vs annual rent.
             </p>
@@ -164,8 +220,8 @@ export default function Dashboard() {
                   type="number"
                   dataKey="years"
                   name="WAULT"
-                  domain={[0, 5]}
-                  ticks={[0, 1, 2, 3, 4, 5]}
+                  domain={[0, 10]}
+                  ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
                   tick={{ fontSize: 11 }}
                   stroke="hsl(var(--muted-foreground))"
                   label={{ value: "Years Remaining", position: "insideBottom", offset: -12, style: { fontSize: 11, fill: "hsl(var(--muted-foreground))" } }}
@@ -176,8 +232,8 @@ export default function Dashboard() {
                   name="Annual Rent"
                   tick={{ fontSize: 10 }}
                   stroke="hsl(var(--muted-foreground))"
-                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
-                  label={{ value: "Annual Rent (PLN)", angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
+                  tickFormatter={(v) => fmtCompact(v)}
+                  label={{ value: `Annual Rent (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
                 />
                 <ZAxis type="number" dataKey="gla" range={[8, 40]} name="GLA" />
                 <Tooltip
@@ -185,13 +241,15 @@ export default function Dashboard() {
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as typeof expiryRiskData[number];
-                    const waultLabel = d.actualYears > 5 ? "5+ yrs" : `${d.actualYears} yrs`;
-                    const tier = d.actualYears < 1 ? "Critical" : d.actualYears < 2.5 ? "Watch" : "Stable";
+                    const waultLabel = `${d.actualYears} yrs`;
+                    const tier = d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable";
+                    const am = fmtAM(d.rent);
                     return (
                       <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
                         <div className="font-semibold mb-1">{d.tenant}</div>
                         <div>WAULT: {waultLabel}</div>
-                        <div>Annual Rent: PLN {d.rent.toLocaleString()}</div>
+                        <div>{am.primary}</div>
+                        <div className="text-muted-foreground">{am.secondary}</div>
                         <div>GLA: {d.gla.toLocaleString()} m²</div>
                         <div>Risk tier: {tier}</div>
                       </div>
@@ -199,8 +257,8 @@ export default function Dashboard() {
                   }}
                 />
                 <ReferenceArea x1={0} x2={1} fill="#ef4444" fillOpacity={0.08} />
-                <ReferenceArea x1={1} x2={2.5} fill="#f59e0b" fillOpacity={0.08} />
-                <ReferenceArea x1={2.5} x2={5} fill="#22c55e" fillOpacity={0.08} />
+                <ReferenceArea x1={1} x2={3} fill="#f59e0b" fillOpacity={0.08} />
+                <ReferenceArea x1={3} x2={10} fill="#22c55e" fillOpacity={0.08} />
                 <ReferenceLine
                   x={1}
                   stroke="#ef4444"
@@ -208,7 +266,7 @@ export default function Dashboard() {
                   label={{ value: "Critical", position: "top", fill: "#ef4444", fontSize: 10 }}
                 />
                 <ReferenceLine
-                  x={2.5}
+                  x={3}
                   stroke="#f59e0b"
                   strokeDasharray="4 4"
                   label={{ value: "Watch", position: "top", fill: "#f59e0b", fontSize: 10 }}
@@ -229,8 +287,29 @@ export default function Dashboard() {
           </Card>
 
           <div ref={alertsRef} className="space-y-3">
-            <h3 className="text-base font-display font-semibold">Alerts Requiring Attention</h3>
-            {alerts.map((a, i) => {
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-base font-display font-semibold">Alerts Requiring Attention</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">Lead time</span>
+                <Select value={String(leadMonths)} onValueChange={(v) => setLeadMonths(Number(v))}>
+                  <SelectTrigger className="h-8 w-[110px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6 months</SelectItem>
+                    <SelectItem value="12">12 months</SelectItem>
+                    <SelectItem value="18">18 months</SelectItem>
+                    <SelectItem value="24">24 months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {visibleAlerts.length === 0 && (
+              <Card className="p-4 text-xs text-muted-foreground">
+                No alerts within the next {leadMonths} months.
+              </Card>
+            )}
+            {visibleAlerts.map((a, i) => {
               const isRed = a.tone === "red";
               return (
                 <Card

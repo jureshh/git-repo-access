@@ -11,6 +11,10 @@ import {
   type GroupKey, type Tenant, type FieldKey,
 } from "@/components/leasereview/data";
 import { SourcePanel } from "@/components/leasereview/SourcePanel";
+import { useFormatRent } from "@/lib/currency";
+
+const RENT_FIELDS = new Set<FieldKey>(["annualRent", "effectiveRent", "guaranteeAmount"]);
+const PER_M2_FIELDS = new Set<FieldKey>(["baseRent"]);
 
 type ViewMode = "portfolio" | "lease";
 
@@ -33,10 +37,36 @@ function cellBgTint(field: FieldKey, value: string): string {
 }
 
 export default function LeaseReview() {
+  const fmtRent = useFormatRent();
+  const renderCell = (field: FieldKey, raw: string): React.ReactNode => {
+    if (!raw) return raw;
+    const num = Number(raw.replace(/[^\d.-]/g, ""));
+    if (Number.isNaN(num) || num === 0) return raw;
+    if (RENT_FIELDS.has(field)) {
+      const r = fmtRent(num);
+      return (
+        <span>
+          <span className="font-medium">{r.primary}</span>
+          <span className="block text-[10px] text-muted-foreground">{r.secondary}</span>
+        </span>
+      );
+    }
+    if (PER_M2_FIELDS.has(field)) {
+      const r = fmtRent(num, { suffix: "/m²" });
+      return (
+        <span>
+          <span className="font-medium">{r.primary}</span>
+          <span className="block text-[10px] text-muted-foreground">{r.secondary}</span>
+        </span>
+      );
+    }
+    return raw;
+  };
+
   const [view, setView] = useState<ViewMode>("portfolio");
   const [filter, setFilter] = useState<string>("All Fields");
   const [collapsed, setCollapsed] = useState<Record<GroupKey, boolean>>({
-    Financial: false, Dates: false, Guarantees: false, Indexation: false, Obligations: false,
+    Financial: false, Dates: false, Renewal: false, Guarantees: false, Indexation: false, Obligations: false,
   });
   const [selected, setSelected] = useState<{ field: FieldKey; tenant: Tenant } | null>({
     field: "guaranteeStatus", tenant: "Café Roma",
@@ -163,7 +193,7 @@ export default function LeaseReview() {
                                       isSel && "border-l-2 border-l-primary bg-primary/10 text-foreground font-medium",
                                     )}
                                   >
-                                    {val}
+                                    {renderCell(f.key, val)}
                                   </td>
                                 );
                               })}

@@ -6,9 +6,22 @@ export interface FieldDef {
   group: GroupKey;
 }
 
-export type GroupKey = "Financial" | "Dates" | "Guarantees" | "Indexation" | "Obligations";
+export type GroupKey =
+  | "Financial"
+  | "Dates"
+  | "Renewal"
+  | "Guarantees"
+  | "Indexation"
+  | "Obligations";
 
-export const GROUPS: GroupKey[] = ["Financial", "Dates", "Guarantees", "Indexation", "Obligations"];
+export const GROUPS: GroupKey[] = [
+  "Financial",
+  "Dates",
+  "Renewal",
+  "Guarantees",
+  "Indexation",
+  "Obligations",
+];
 
 export const FIELDS: FieldDef[] = [
   { key: "baseRent", label: "Base Rent (PLN/m²)", group: "Financial" },
@@ -19,16 +32,23 @@ export const FIELDS: FieldDef[] = [
   { key: "leaseExpiry", label: "Lease Expiry", group: "Dates" },
   { key: "wault", label: "WAULT", group: "Dates" },
   { key: "breakOption", label: "Break Option", group: "Dates" },
+  { key: "breakPenalty", label: "Break Penalty", group: "Dates" },
+  { key: "renewalType", label: "Renewal Type", group: "Renewal" },
+  { key: "noticePeriod", label: "Notice Period", group: "Renewal" },
   { key: "guaranteeAmount", label: "Guarantee (PLN)", group: "Guarantees" },
   { key: "guaranteeExpiry", label: "Guarantee Expiry", group: "Guarantees" },
   { key: "guaranteeStatus", label: "Status", group: "Guarantees" },
+  { key: "notarialDeed", label: "Notarial Deed (Art. 777 KPC)", group: "Guarantees" },
   { key: "index", label: "Index", group: "Indexation" },
   { key: "lastApplied", label: "Last Applied", group: "Indexation" },
   { key: "nextReview", label: "Next Review", group: "Indexation" },
+  { key: "stepRent", label: "Step Rent", group: "Indexation" },
   { key: "serviceCharge", label: "Service Charge", group: "Obligations" },
   { key: "turnoverRent", label: "Turnover Rent", group: "Obligations" },
   { key: "permittedUse", label: "Permitted Use", group: "Obligations" },
   { key: "reinstatement", label: "Reinstatement", group: "Obligations" },
+  { key: "nonCompete", label: "Non-Compete / Exclusivity", group: "Obligations" },
+  { key: "greenClause", label: "Green Clause", group: "Obligations" },
 ];
 
 export const TENANTS = [
@@ -62,12 +82,20 @@ export const DATA: Record<FieldKey, Record<Tenant, string>> = {
   turnoverRent: { "Anchor – Fashion": ">8% revenue", "Café Roma": "None", "Sport Zone": ">6% revenue", "Electronics Plus": "None", "Kids World": ">7% revenue", "Jewellery Co": "None", "Optika Centrum": "None" },
   permittedUse: { "Anchor – Fashion": "Fashion retail", "Café Roma": "Food & beverage", "Sport Zone": "Sporting goods", "Electronics Plus": "Electronics", "Kids World": "Children's goods", "Jewellery Co": "Jewellery", "Optika Centrum": "Optical" },
   reinstatement: { "Anchor – Fashion": "Full", "Café Roma": "Partial", "Sport Zone": "Full", "Electronics Plus": "Full", "Kids World": "Partial", "Jewellery Co": "Full", "Optika Centrum": "Partial" },
+  breakPenalty: { "Anchor – Fashion": "None", "Café Roma": "3 months base rent", "Sport Zone": "None", "Electronics Plus": "6 months base rent", "Kids World": "None", "Jewellery Co": "None", "Optika Centrum": "None" },
+  renewalType: { "Anchor – Fashion": "Notice Required", "Café Roma": "Notice Required", "Sport Zone": "Automatic", "Electronics Plus": "Notice Required", "Kids World": "Automatic", "Jewellery Co": "Notice Required", "Optika Centrum": "Notice Required" },
+  noticePeriod: { "Anchor – Fashion": "6 months", "Café Roma": "6 months", "Sport Zone": "—", "Electronics Plus": "9 months", "Kids World": "—", "Jewellery Co": "3 months", "Optika Centrum": "6 months" },
+  notarialDeed: { "Anchor – Fashion": "Yes · valid 31 Jan 2032", "Café Roma": "Yes · valid 30 Jun 2026", "Sport Zone": "Yes · valid 28 Feb 2027", "Electronics Plus": "No", "Kids World": "Yes · valid 10 Sep 2029", "Jewellery Co": "No", "Optika Centrum": "Yes · valid 20 Nov 2030" },
+  stepRent: { "Anchor – Fashion": "No", "Café Roma": "Yes · +3% Yr3, +3% Yr5", "Sport Zone": "No", "Electronics Plus": "Yes · +2.5% Yr3", "Kids World": "No", "Jewellery Co": "No", "Optika Centrum": "No" },
+  nonCompete: { "Anchor – Fashion": "Exclusive fashion retail within 200m", "Café Roma": "None", "Sport Zone": "Exclusive sporting goods within 150m", "Electronics Plus": "None", "Kids World": "None", "Jewellery Co": "None", "Optika Centrum": "Exclusive optical within centre" },
+  greenClause: { "Anchor – Fashion": "Yes · ESG compliance", "Café Roma": "Not present", "Sport Zone": "Not present", "Electronics Plus": "Yes · energy reporting", "Kids World": "Not present", "Jewellery Co": "Not present", "Optika Centrum": "Not present" },
 };
 
 export const GROUP_FILTER_MAP: Record<string, GroupKey[]> = {
-  "All Fields": ["Financial", "Dates", "Guarantees", "Indexation", "Obligations"],
+  "All Fields": ["Financial", "Dates", "Renewal", "Guarantees", "Indexation", "Obligations"],
   Financial: ["Financial"],
   Dates: ["Dates"],
+  Renewal: ["Renewal"],
   Guarantees: ["Guarantees"],
   Indexation: ["Indexation"],
   Obligations: ["Obligations"],

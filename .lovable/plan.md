@@ -1,94 +1,69 @@
-# Building Intelligence Centre — Plan
+## Plan: JLL Expert Feedback Updates
 
-A new route `/building` rendered inside the existing `Layout`, added to the top nav as "Building". Dark navy theme matching the app, built with Tailwind + semantic tokens (extended for the spec's exact hex values where needed).
+Apply 5 sets of changes across Dashboard, Building Intelligence, and Lease Review screens. All additive/reformatting — no layout restructuring.
 
-## Route & navigation
+### 1. Currency System (EUR primary, PLN secondary)
 
-- Add `BuildingIntelligence.tsx` page in `src/pages/`.
-- Register `<Route path="/building" element={<BuildingIntelligence />} />` in `src/App.tsx`.
-- Add nav item `{ to: "/building", label: "Building", icon: LayoutGrid }` in `src/components/Layout.tsx`.
+Create `src/lib/currency.tsx`:
+- `CurrencyContext` with `displayCurrency` ("EUR"|"PLN") and `eurPlnRate` (default 4.30)
+- `useCurrency()` hook
+- `formatRent(plnAmount, { mode })` returning JSX: primary bold figure + smaller secondary in parens
+- `formatMonthlyAnnual(plnAnnual)` returning "€X/yr (€Y/mo)" with secondary PLN line
+- Wrap app in `<CurrencyProvider>` in `src/App.tsx`
 
-## File structure
+Add to `src/components/Layout.tsx` nav: small dropdown "Display: EUR | PLN" + gear-style popover with editable EUR/PLN rate input.
 
-```
-src/pages/BuildingIntelligence.tsx          orchestrator + state
-src/components/building/
-  SummaryBar.tsx                            Zone 1 — 6 KPIs
-  FloorPlan.tsx                             Zone 2A — SVG plan + floor tabs
-  UnitTable.tsx                             Zone 2B — table
-  LeaseDetailPanel.tsx                      Zone 3 — slide-out detail
-  data.ts                                   typed units, floor list, detail content
-  colors.ts                                 status hex constants
-```
+### 2. Monthly Rent Alongside Annual
 
-## State (in page component)
+Wherever annual rent shows, add monthly (annual/12). Apply via the new `formatMonthlyAnnual` helper to:
+- `src/pages/Dashboard.tsx`: GRI/NOI KPI cards, Annual Rent by Tenant chart tooltip & labels
+- `src/components/building/LeaseDetailPanel.tsx`: "Base Rent" and "Effective Rent" rows show /yr and /mo, with EUR primary
+- `src/pages/LeaseReview.tsx` (via DATA): "Annual Rent" and "Effective Rent" cells render with helper
 
-- `selectedFloor: "GF" | "1" | "2" | "3"` (default `"2"`)
-- `selectedUnitId: string | null` (default `"2-B1"` so detail panel shows on load)
-- Selecting a unit (from plan or table) sets `selectedUnitId` and swaps right panel from table → detail. Close button on detail clears selection back to table.
-- The selected unit gets a white ring/glow on the floor plan and a highlighted row in the table.
+### 3. Tenant Expiry Risk Matrix → 0–10 years
 
-## Zone 1 — Summary Bar
+In `src/pages/Dashboard.tsx` scatter chart:
+- X-axis domain `[0, 10]`, title "Tenant Expiry Risk Matrix (0–10 Years)"
+- ReferenceAreas: red 0–1, amber 1–3, green 3–10
+- ReferenceLines: dashed red at 1 ("Critical"), dashed amber at 3 ("Watch")
+- Color thresholds: red <1, amber <3, green ≥3
+- Add 3 new tenants: "Anchor – Grocery" (8.5 yrs, large GLA), "Flagship Electronics" (9.2 yrs, mid-large), "Pharmacy Plus" (7.1 yrs, mid)
+- Y-axis (rent) formatted in EUR via currency context
 
-Single dark card, horizontal flex with 6 stat blocks (label above, value below):
-Total GLA · Occupied (sqm + %) · WAULT · Annual Rent · Active Alerts (amber) · Guarantees Expiring (red).
+### 4. Add New Clause Fields
 
-## Zone 2A — Floor Plan
+Update `src/components/leasereview/data.ts`:
+- Add `GroupKey` "Renewal" (new group between Dates & Guarantees)
+- New FIELDS:
+  - Break: `breakPenalty`
+  - Renewal (new group): `renewalType`, `noticePeriod`
+  - Guarantees: `notarialDeed`
+  - Indexation: `stepRent`
+  - Obligations: `nonCompete`, `greenClause` (keep existing `reinstatement`)
+- Populate DATA for all 7 tenants with realistic values
+- Update GROUPS array + GROUP_FILTER_MAP
 
-- Floor tabs (GF / 1 / 2 / 3) using existing `Tabs` component. Only Floor 2 has unit data; other floors render a "No data" placeholder over the same atrium shell.
-- SVG canvas (responsive `viewBox`, e.g. `0 0 800 500`) containing:
-  - Background rect `#0D1B2A`
-  - Central atrium rect `#1E293B` labelled "Common Area"
-  - Unit rectangles positioned around the perimeter. Layout sketch for Floor 2:
+Update `LeaseDetailPanel.tsx` Café Roma block + generic block to show these new fields under matching sections. Add "Renewal" section. Add "Notarial Deed" tooltip via `<span title>`.
 
-```text
-+------------------------------------------------+
-| 2-A1  |        Common Area         | 2-B1 2-B2|
-| Anchor|                            |----------|
-| (tall)|                            | 2-B3 2-C1|
-|       |                            |----------|
-|       |   2-A2     2-C2     2-C3   |          |
-+------------------------------------------------+
-```
-   (Final pixel coords chosen so 2-A1 spans ~2× height of others; sizes loosely scaled by sqm.)
-  - Each unit `<g>` is clickable, fill = status color, white text for tenant name, smaller grey for sqm, WAULT in bottom-right, bell icon (lucide `Bell` inlined as SVG path) top-right when `alert` is set.
-  - Selected unit gets `stroke="#0891B2"` (teal) + subtle `drop-shadow` glow.
-  - Vacant unit shows `[Vacant]` and no WAULT.
+### 5. Configurable Alert Lead Time
 
-## Zone 2B — Unit Table
+In `src/pages/Dashboard.tsx` "Alerts Requiring Attention" card header: add a `Select` with options 6/12/18/24 months (default 12). Filter the displayed alert list by `monthsToEvent <= leadTime`. Add `monthsAway` metadata to each alert item (synthetic).
 
-- Uses existing `Table` primitives. Columns per spec; status cell shows colored dot + label.
-- Row click → select unit. Selected row: teal left border + `bg-primary/10`.
-- Scroll inside panel; panel height matches floor plan panel.
+### Files Touched
 
-## Zone 3 — Lease Detail Panel
+New:
+- `src/lib/currency.tsx`
 
-- Conditionally rendered in place of `UnitTable` when `selectedUnitId` is set.
-- Back/close button (X) top-right returns to table view.
-- Sections per spec for Café Roma (Header, Rent Economics, Lease Term, Break Option, Bank Guarantee, Indexation, Documents). Other units render a minimal header + "Detailed lease data not yet ingested" stub so clicks elsewhere still work gracefully.
-- Each `Source: §X.X — Document, p. XX` rendered as inline teal link (`text-[#0891B2] hover:underline`), `href="#"` with `onClick` preventDefault.
+Modified:
+- `src/App.tsx` — wrap in CurrencyProvider
+- `src/components/Layout.tsx` — currency toggle + rate setting
+- `src/pages/Dashboard.tsx` — KPI EUR/monthly, scatter 0–10, alert lead time
+- `src/components/building/LeaseDetailPanel.tsx` — EUR/monthly + new fields + Renewal section
+- `src/components/leasereview/data.ts` — new fields/groups + populated values
+- `src/pages/LeaseReview.tsx` — render rent cells via formatter; new "Renewal" group will be picked up automatically
 
-## Color tokens
+### Notes
 
-Use spec hex values directly via Tailwind arbitrary classes for status colors (`bg-[#059669]` etc.) to keep the existing global theme untouched. Page-level background `bg-[#0D1B2A]`, cards `bg-[#162032]`, teal accent `#0891B2`.
-
-## Layout sizing
-
-```
-<page bg #0D1B2A, container, py-6, space-y-4>
-  <SummaryBar />                              // full width card
-  <div grid grid-cols-5 gap-4 h-[calc(100vh-220px)]>
-     <FloorPlan className="col-span-3" />     // 60%
-     {selectedUnitId
-        ? <LeaseDetailPanel className="col-span-2" />
-        : <UnitTable className="col-span-2" />}
-  </div>
-```
-
-Both right-hand variants share the same outer card so the swap feels like a slide-in (add `transition-opacity` / simple fade — no extra deps).
-
-## Out of scope
-
-- No backend wiring; data is static in `data.ts`.
-- No real PDF navigation from source links.
-- Only Floor 2 is populated with units; other floor tabs are placeholders.
+- All rent values in source data remain PLN integers; EUR conversion happens at render time using context rate.
+- Currency toggle is a simple inline `<select>` styled to match the nav (no new shadcn component needed).
+- Step Rent expandable schedule: render a small inline "View schedule" popover via existing `Popover` component showing 2–3 step rows; only when `stepRent === "Yes"`.

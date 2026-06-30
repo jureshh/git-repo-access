@@ -1,6 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Building2, LayoutDashboard, LayoutGrid, Upload, FileSearch, Users, Search } from "lucide-react";
+import { useCurrency } from "@/lib/currency";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Settings } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Home", icon: Building2 },
@@ -51,8 +54,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="hidden sm:block text-xs font-medium text-muted-foreground">
-            Demo Mode
+          <div className="hidden sm:flex items-center gap-3">
+            <CurrencyToggle />
+            <span className="text-xs font-medium text-muted-foreground">Demo Mode</span>
           </div>
         </div>
       </header>
@@ -64,6 +68,50 @@ export function Layout({ children }: { children: React.ReactNode }) {
           © {new Date().getFullYear()} LeaseOS — AI-Powered Lease Intelligence
         </div>
       </footer>
+    </div>
+  );
+}
+
+function CurrencyToggle() {
+  const { display, setDisplay, rate, setRate } = useCurrency();
+  return (
+    <div className="flex items-center gap-1.5 rounded-md border bg-card px-1 py-1">
+      <span className="text-[10px] font-semibold uppercase text-muted-foreground pl-1.5">Display</span>
+      <div className="inline-flex rounded-sm bg-muted/50 p-0.5">
+        {(["EUR", "PLN"] as const).map((c) => (
+          <button
+            key={c}
+            onClick={() => setDisplay(c)}
+            className={cn(
+              "px-2 py-0.5 text-[11px] font-semibold rounded-sm transition-colors",
+              display === c ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button className="p-1 text-muted-foreground hover:text-foreground" aria-label="Currency settings">
+            <Settings className="h-3.5 w-3.5" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-60">
+          <p className="text-xs font-semibold mb-2">Exchange rate</p>
+          <label className="text-[11px] text-muted-foreground">EUR / PLN</label>
+          <input
+            type="number"
+            step="0.01"
+            value={rate}
+            onChange={(e) => setRate(parseFloat(e.target.value) || 0)}
+            className="mt-1 w-full rounded-md border px-2 py-1 text-sm"
+          />
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            1 EUR = {rate.toFixed(2)} PLN. Editable for demo.
+          </p>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
