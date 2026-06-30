@@ -92,7 +92,10 @@ export default function LeaseReview() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[63fr_37fr] gap-6 items-start">
+        <div className={cn(
+          "grid grid-cols-1 gap-6 items-start",
+          view !== "ask" && "lg:grid-cols-[63fr_37fr]"
+        )}>
           {/* Left: table */}
           <div className="space-y-3 min-w-0">
             {/* Toolbar */}
