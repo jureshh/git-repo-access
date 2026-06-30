@@ -211,6 +211,27 @@ export default function Dashboard() {
     }));
   }, []);
 
+  // Conditional chart data sources
+  const portfolioExpiryColored = portfolioExpiryByYear.map((d) => ({
+    ...d,
+    color: d.year === "2026" ? C.red : ["2027", "2028"].includes(d.year) ? C.amber : C.teal,
+  }));
+  const chartExpiry = portfolioMode ? portfolioExpiryColored : buildingExpiryData;
+  const chartRent = portfolioMode
+    ? rentByBuilding.map((b) => ({ tenant: b.name, value: b.value, color: b.color }))
+    : rentData;
+  const chartRisk = portfolioMode ? buildingRiskData : expiryRiskData;
+  const rentChartTitle = portfolioMode
+    ? `Annual Rent by Building (${display})`
+    : `Annual Rent by Tenant (${display})`;
+  const riskChartTitle = portfolioMode
+    ? "Building Expiry Risk Matrix (0–10 Years)"
+    : "Tenant Expiry Risk Matrix (0–10 Years)";
+  const allowChartClick = !portfolioMode;
+
+  // If a non-live building is selected, render only the BuildingNavBar + simplified card.
+  const showSimplifiedOnly = activeBuilding && !activeBuilding.live;
+
   return (
     <div className="py-8 lg:py-12">
       <div className="container space-y-8" ref={topRef}>
