@@ -167,10 +167,23 @@ export default function Dashboard() {
 
   return (
     <div className="py-8 lg:py-12">
-      <div className="container space-y-8">
+      <div className="container space-y-8" ref={topRef}>
         <div style={{ animation: "fade-up 0.5s ease-out forwards" }}>
           <h1 className="text-3xl font-display font-bold">Portfolio Dashboard</h1>
           <p className="text-muted-foreground mt-1">Portfolio financial summary and lease risk overview.</p>
+        </div>
+
+        {/* Building navigation bar */}
+        <BuildingNavBar selectedId={selectedBuilding} onSelect={handleSelectBuilding} />
+
+        {/* Portfolio scope notice */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="text-[11px] font-medium">
+            Portfolio-level KPIs
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            Reflects 1 of 5 properties (Galeria Orkana) — additional properties pending integration.
+          </span>
         </div>
 
         {/* KPI row */}
