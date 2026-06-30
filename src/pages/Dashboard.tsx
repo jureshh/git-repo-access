@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import {
@@ -16,7 +16,7 @@ import { FloorPlan } from "@/components/building/FloorPlan";
 import { LeaseDetailPanel } from "@/components/building/LeaseDetailPanel";
 import { UnitTable } from "@/components/building/UnitTable";
 import { Floor, unitsByFloor } from "@/components/building/data";
-import { Badge } from "@/components/ui/badge";
+import { PORTFOLIO, portfolioTotals, portfolioExpiryByYear, portfolioAlerts } from "@/lib/portfolio";
 
 const C = {
   teal: "hsl(var(--primary))",
