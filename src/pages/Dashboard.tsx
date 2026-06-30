@@ -138,15 +138,6 @@ export default function Dashboard() {
 
   const handleSelectBuilding = (id: string | null) => {
     setSelectedBuilding(id);
-    if (id) {
-      setTimeout(() => {
-        buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 60);
-    } else {
-      setTimeout(() => {
-        topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 60);
-    }
   };
 
   const handleSelectTenantFromChart = (tenantName: string) => {
