@@ -1,26 +1,27 @@
-import { Building2, Store, Warehouse, LandPlot, Castle } from "lucide-react";
+import { Building2, Store, Warehouse, LandPlot, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { PORTFOLIO } from "@/lib/portfolio";
 
-export interface BuildingMeta {
-  id: string;
-  name: string;
-  city: string;
-  icon: React.ComponentType<{ className?: string }>;
-  live: boolean;
-}
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  "galeria-orkana": Store,
+  "vivo-pila": Building2,
+  "vivo-krosno": Warehouse,
+  "vivo-stalowa-wola": Building2,
+  "ogrody": LandPlot,
+};
 
-export const BUILDINGS: BuildingMeta[] = [
-  { id: "galeria-orkana", name: "Galeria Orkana", city: "Lublin", icon: Store, live: true },
-  { id: "vivo-krosno", name: "Vivo! Krosno", city: "Krosno", icon: Warehouse, live: false },
-  { id: "vivo-pila", name: "Vivo! Piła", city: "Piła", icon: Building2, live: false },
-  { id: "ogrody", name: "Ogrody", city: "Elbląg", icon: LandPlot, live: false },
-  { id: "myhive-spire", name: "myhive Warsaw Spire", city: "Warsaw", icon: Castle, live: false },
-];
+export const BUILDINGS = PORTFOLIO.map((b) => ({
+  id: b.id,
+  name: b.name,
+  city: b.city,
+  live: b.live,
+  icon: ICONS[b.id] ?? Building2,
+}));
 
 interface Props {
-  selectedId: string;
-  onSelect: (id: string) => void;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
 }
 
 export function BuildingNavBar({ selectedId, onSelect }: Props) {
@@ -28,37 +29,41 @@ export function BuildingNavBar({ selectedId, onSelect }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Portfolio Buildings
         </h2>
-        <span className="text-[11px] text-muted-foreground">
-          1 of {BUILDINGS.length} integrated · scroll for more
-        </span>
+        {selectedId && (
+          <button
+            onClick={() => { setNotice(null); onSelect(null); }}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium hover:bg-primary/15 transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" /> All Buildings
+          </button>
+        )}
       </div>
       <div className="relative">
         <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1">
           {BUILDINGS.map((b) => {
             const Icon = b.icon;
-            const selected = selectedId === b.id && b.live;
+            const selected = selectedId === b.id;
             return (
               <button
                 key={b.id}
                 onClick={() => {
-                  if (b.live) {
-                    setNotice(null);
-                    onSelect(b.id);
+                  setNotice(null);
+                  if (selectedId === b.id) {
+                    onSelect(null);
                   } else {
-                    setNotice(`${b.name} — live data not yet connected`);
+                    onSelect(b.id);
                   }
                 }}
-                title={b.live ? `${b.name} (${b.city})` : `${b.name} — Coming Soon`}
+                title={b.live ? `${b.name} (${b.city})` : `${b.name} — Summary only`}
                 className={cn(
                   "snap-start shrink-0 w-40 rounded-xl border bg-card p-3 text-left transition-all",
                   "flex flex-col gap-2",
-                  b.live
-                    ? "hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
-                    : "opacity-50 cursor-not-allowed grayscale",
+                  "hover:shadow-md hover:-translate-y-0.5 cursor-pointer",
+                  !b.live && "opacity-80",
                   selected && "border-primary ring-2 ring-primary/30 bg-primary/5"
                 )}
               >
@@ -79,7 +84,7 @@ export function BuildingNavBar({ selectedId, onSelect }: Props) {
                       b.live ? "text-success" : "text-muted-foreground"
                     )}
                   >
-                    {b.live ? "● Live" : "Coming Soon"}
+                    {b.live ? "● Live" : "Summary only"}
                   </p>
                 </div>
               </button>
