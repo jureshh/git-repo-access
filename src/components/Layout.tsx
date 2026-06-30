@@ -1,19 +1,30 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Building2, LayoutDashboard, LayoutGrid, Upload, FileSearch, Users, Search } from "lucide-react";
+import { Building2, LayoutDashboard, Upload, FileSearch, Users, Search } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Settings } from "lucide-react";
 
-const navItems = [
-  { to: "/", label: "Home", icon: Building2 },
-  { to: "/upload", label: "Upload", icon: Upload },
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/building", label: "Building", icon: LayoutGrid },
-  { to: "/tenant-intelligence", label: "Tenants", icon: Users, badge: "9" },
-  { to: "/investigations", label: "Investigations", icon: Search },
-  { to: "/lease-review", label: "Review", icon: FileSearch },
+// Demo-mode visibility flags. Flip to re-enable a nav item — routes remain intact.
+const NAV_VISIBILITY = {
+  showTenantsTab: false,
+  showInvestigationsTab: false,
+};
+
+const allNavItems = [
+  { to: "/", label: "Home", icon: Building2, key: "home" },
+  { to: "/upload", label: "Upload", icon: Upload, key: "upload" },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, key: "dashboard" },
+  { to: "/tenant-intelligence", label: "Tenants", icon: Users, badge: "9", key: "tenants" },
+  { to: "/investigations", label: "Investigations", icon: Search, key: "investigations" },
+  { to: "/lease-review", label: "Review", icon: FileSearch, key: "review" },
 ];
+
+const navItems = allNavItems.filter((i) => {
+  if (i.key === "tenants") return NAV_VISIBILITY.showTenantsTab;
+  if (i.key === "investigations") return NAV_VISIBILITY.showInvestigationsTab;
+  return true;
+});
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();

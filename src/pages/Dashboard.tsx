@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import {
@@ -9,8 +9,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LabelList, Cell, ReferenceLine, ScatterChart, Scatter, ZAxis, ReferenceArea,
 } from "recharts";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, ArrowUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BuildingNavBar, BUILDINGS } from "@/components/dashboard/BuildingNavBar";
+import { FloorPlan } from "@/components/building/FloorPlan";
+import { LeaseDetailPanel } from "@/components/building/LeaseDetailPanel";
+import { UnitTable } from "@/components/building/UnitTable";
+import { Floor, unitsByFloor } from "@/components/building/data";
+import { Badge } from "@/components/ui/badge";
 
 const C = {
   teal: "hsl(var(--primary))",
@@ -116,6 +122,36 @@ export default function Dashboard() {
   const convCur = (pln: number) => (display === "EUR" ? pln / rate : pln);
   const [leadMonths, setLeadMonths] = useState<number>(12);
 
+  // Building drill-down state
+  const [selectedBuilding, setSelectedBuilding] = useState<string>("galeria-orkana");
+  const [floor, setFloor] = useState<Floor>("2");
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>("2-B1");
+  const buildingSectionRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  const liveBuilding = BUILDINGS.find((b) => b.id === selectedBuilding && b.live);
+  const units = unitsByFloor[floor];
+  const selectedUnit = units.find((u) => u.id === selectedUnitId) ?? null;
+  const filteredUnits = selectedUnit ? units.filter((u) => u.id === selectedUnit.id) : units;
+
+  const handleSelectBuilding = (id: string) => {
+    setSelectedBuilding(id);
+    // Auto-scroll to the building detail section
+    setTimeout(() => {
+      buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  };
+
+  const handleSelectTenantFromChart = (tenantName: string) => {
+    const match = units.find((u) => u.tenant === tenantName);
+    if (match) {
+      setSelectedUnitId(match.id);
+      setTimeout(() => {
+        buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    }
+  };
+
   const visibleAlerts = useMemo(
     () => alerts.filter((a) => a.days <= leadMonths * 30),
     [leadMonths]
@@ -131,10 +167,23 @@ export default function Dashboard() {
 
   return (
     <div className="py-8 lg:py-12">
-      <div className="container space-y-8">
+      <div className="container space-y-8" ref={topRef}>
         <div style={{ animation: "fade-up 0.5s ease-out forwards" }}>
           <h1 className="text-3xl font-display font-bold">Portfolio Dashboard</h1>
           <p className="text-muted-foreground mt-1">Portfolio financial summary and lease risk overview.</p>
+        </div>
+
+        {/* Building navigation bar */}
+        <BuildingNavBar selectedId={selectedBuilding} onSelect={handleSelectBuilding} />
+
+        {/* Portfolio scope notice */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary" className="text-[11px] font-medium">
+            Portfolio-level KPIs
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            Reflects 1 of 5 properties (Galeria Orkana) — additional properties pending integration.
+          </span>
         </div>
 
         {/* KPI row */}
@@ -200,7 +249,12 @@ export default function Dashboard() {
                     );
                   }}
                 />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                <Bar
+                  dataKey="value"
+                  radius={[0, 6, 6, 0]}
+                  cursor="pointer"
+                  onClick={(d: { tenant?: string } | undefined) => d?.tenant && handleSelectTenantFromChart(d.tenant)}
+                >
                   {rentData.map((d, i) => <Cell key={i} fill={d.color} />)}
                   <LabelList dataKey="value" position="right" formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 </Bar>
@@ -411,6 +465,63 @@ export default function Dashboard() {
             Data extracted: 22 May 2026 · LeaseOS Demo Mode
           </p>
         </div>
+
+        {/* Building Detail Section (only when a live building is selected) */}
+        {liveBuilding && (
+          <div ref={buildingSectionRef} className="pt-8 mt-4 border-t-2 border-dashed border-border">
+            <div className="-mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 bg-muted/30 rounded-xl space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-display font-bold">
+                    Building Detail: {liveBuilding.name}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {liveBuilding.city} · Stacking plan, units &amp; lease economics
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {selectedUnit && (
+                    <button
+                      onClick={() => setSelectedUnitId(null)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium hover:bg-primary/15"
+                    >
+                      Showing: {selectedUnit.tenant}
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                    className="inline-flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
+                  >
+                    <ArrowUp className="h-3 w-3" /> Portfolio Overview
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+                <div className="lg:col-span-3">
+                  <FloorPlan
+                    floor={floor}
+                    onFloorChange={(f) => { setFloor(f); setSelectedUnitId(null); }}
+                    selectedUnitId={selectedUnitId}
+                    onSelectUnit={setSelectedUnitId}
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  {selectedUnit ? (
+                    <LeaseDetailPanel unit={selectedUnit} onClose={() => setSelectedUnitId(null)} />
+                  ) : (
+                    <UnitTable
+                      units={filteredUnits}
+                      selectedUnitId={selectedUnitId}
+                      onSelectUnit={setSelectedUnitId}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
