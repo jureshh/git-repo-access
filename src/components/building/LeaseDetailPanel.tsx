@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_META, Unit } from "./data";
+import { useFormatRent, useFormatAnnualMonthly } from "@/lib/currency";
 
 interface Props {
   unit: Unit;
@@ -46,6 +47,28 @@ const Field = ({
 export function LeaseDetailPanel({ unit, onClose }: Props) {
   const meta = STATUS_META[unit.status];
   const isCafe = unit.id === "2-B1";
+  const fmtRent = useFormatRent();
+  const fmtAM = useFormatAnnualMonthly();
+
+  const rentLine = (pln: number) => {
+    const am = fmtAM(pln);
+    return (
+      <span>
+        <span className="font-semibold">{am.primary}</span>{" "}
+        <span className="text-xs text-muted-foreground">{am.secondary}</span>
+      </span>
+    );
+  };
+
+  const perM2Line = (pln: number) => {
+    const r = fmtRent(pln, { suffix: "/m²" });
+    return (
+      <span>
+        <span className="font-semibold">{r.primary}</span>{" "}
+        <span className="text-xs text-muted-foreground">{r.secondary}</span>
+      </span>
+    );
+  };
 
   return (
     <Card className="glass flex flex-col overflow-hidden animate-in fade-in duration-200">
@@ -75,12 +98,19 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
         {isCafe ? (
           <>
             <Section title="Rent Economics">
-              <Field label="Base Rent" value="PLN 1,000/m² = PLN 180,000/yr" />
+              <Field label="Base Rent / m²" value={perM2Line(1000)} />
+              <Field label="Annual Rent" value={rentLine(180_000)} />
               <Field
                 label="Effective Rent"
-                value="PLN 162,000/yr (after 2-month rent-free in Annex 2)"
+                value={
+                  <span>
+                    {rentLine(162_000)}{" "}
+                    <span className="text-xs text-muted-foreground">(after 2-mo rent-free, Annex 2)</span>
+                  </span>
+                }
                 source="§4.1 — Base Lease, p. 12"
               />
+              <Field label="Step Rent" value={<span>Yes — +3% in Year 3, +3% in Year 5</span>} source="§4.3 — Base Lease, p. 13" />
             </Section>
 
             <Section title="Lease Term">
@@ -93,6 +123,7 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
               <Field label="Type" value="Tenant break" />
               <Field label="Exercise date" value="31 Mar 2026" />
               <Field label="Notice required" value="3 months written notice" />
+              <Field label="Break Penalty" value="3 months base rent payable on exercise" source="§8.3 — Base Lease, p. 25" />
               <Field
                 label="Status"
                 value={
@@ -104,8 +135,13 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
               />
             </Section>
 
+            <Section title="Renewal">
+              <Field label="Renewal Type" value="Notice Required" />
+              <Field label="Notice Period" value="6 months prior to expiry" source="§9.1 — Base Lease, p. 27" />
+            </Section>
+
             <Section title="Bank Guarantee">
-              <Field label="Amount" value="PLN 54,000 (3 months rent)" />
+              <Field label="Amount" value={<span>{fmtRent(54_000).primary} <span className="text-xs text-muted-foreground">{fmtRent(54_000).secondary}</span> · 3 months rent</span>} />
               <Field label="Guarantor" value="PKO Bank Polski S.A." />
               <Field label="Expiry" value="30 Apr 2026" />
               <Field
@@ -116,6 +152,15 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
                   </span>
                 }
                 source="§14.1 — Base Lease, p. 38"
+              />
+              <Field
+                label={"Notarial Deed"}
+                value={
+                  <span title="Poddanie się egzekucji — Art. 777 KPC enforcement submission deed">
+                    Yes (Art. 777 KPC) · valid through 30 Jun 2026
+                  </span>
+                }
+                source="§14.4 — Base Lease, p. 39"
               />
             </Section>
 
@@ -128,6 +173,12 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
                 value="January 2026"
                 source="§6.3 — Base Lease, p. 15"
               />
+            </Section>
+
+            <Section title="Obligations">
+              <Field label="Non-Compete / Exclusivity" value="None" />
+              <Field label="Reinstatement" value="Partial — fit-out removal, surfaces reinstated" source="§17.2 — Base Lease, p. 44" />
+              <Field label="Green Clause" value={<span className="text-muted-foreground">Not present</span>} />
             </Section>
 
             <Section title="Documents">
@@ -153,8 +204,8 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
         ) : (
           <>
             <Section title="Rent Economics">
-              <Field label="Annual Rent" value={unit.annualRent ? `PLN ${unit.annualRent.toLocaleString()}` : "—"} />
-              <Field label="Rent / m²" value={unit.rentPerM2 ? `PLN ${unit.rentPerM2.toLocaleString()}` : "—"} />
+              <Field label="Annual Rent" value={unit.annualRent ? rentLine(unit.annualRent) : "—"} />
+              <Field label="Rent / m²" value={unit.rentPerM2 ? perM2Line(unit.rentPerM2) : "—"} />
             </Section>
             <Section title="Lease Term">
               <Field label="Expiry" value={unit.expiry ?? "—"} />
