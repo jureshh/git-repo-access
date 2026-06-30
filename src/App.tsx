@@ -10,6 +10,7 @@ import UploadPage from "./pages/UploadPage";
 import Dashboard from "./pages/Dashboard";
 import BuildingIntelligence from "./pages/BuildingIntelligence";
 import LeaseReview from "./pages/LeaseReview";
+import AskPortfolioPage from "./pages/AskPortfolioPage";
 import TenantIntelligence from "./pages/TenantIntelligence";
 import Investigations from "./pages/Investigations";
 import ServiceChargeAudit from "./pages/ServiceChargeAudit";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/building" element={<BuildingIntelligence />} />
             <Route path="/lease-review" element={<LeaseReview />} />
+            <Route path="/ask-portfolio" element={<AskPortfolioPage />} />
             <Route path="/tenant-intelligence" element={<TenantIntelligence />} />
             <Route path="/investigations" element={<Investigations />} />
             <Route path="/investigations/service-charge-audit" element={<ServiceChargeAudit />} />
