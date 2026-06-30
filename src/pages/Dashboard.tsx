@@ -48,7 +48,7 @@ function KpiTile({ label, value, sub, tone, onClick, detail }: KpiProps) {
   );
 }
 
-const expiryData = [
+const buildingExpiryData = [
   { year: "2026", sqm: 255, color: C.red },
   { year: "2027", sqm: 850, color: C.amber },
   { year: "2028", sqm: 620, color: C.amber },
@@ -123,23 +123,30 @@ export default function Dashboard() {
   const [leadMonths, setLeadMonths] = useState<number>(12);
 
   // Building drill-down state
-  const [selectedBuilding, setSelectedBuilding] = useState<string>("galeria-orkana");
+  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [floor, setFloor] = useState<Floor>("2");
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>("2-B1");
   const buildingSectionRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
 
-  const liveBuilding = BUILDINGS.find((b) => b.id === selectedBuilding && b.live);
+  const activeBuilding = selectedBuilding ? BUILDINGS.find((b) => b.id === selectedBuilding) : null;
+  const activePortfolio = selectedBuilding ? PORTFOLIO.find((b) => b.id === selectedBuilding) : null;
+  const liveBuilding = activeBuilding?.live ? activeBuilding : null;
   const units = unitsByFloor[floor];
   const selectedUnit = units.find((u) => u.id === selectedUnitId) ?? null;
   const filteredUnits = selectedUnit ? units.filter((u) => u.id === selectedUnit.id) : units;
 
-  const handleSelectBuilding = (id: string) => {
+  const handleSelectBuilding = (id: string | null) => {
     setSelectedBuilding(id);
-    // Auto-scroll to the building detail section
-    setTimeout(() => {
-      buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
+    if (id) {
+      setTimeout(() => {
+        buildingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    } else {
+      setTimeout(() => {
+        topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    }
   };
 
   const handleSelectTenantFromChart = (tenantName: string) => {
@@ -152,18 +159,57 @@ export default function Dashboard() {
     }
   };
 
-  const visibleAlerts = useMemo(
-    () => alerts.filter((a) => a.days <= leadMonths * 30),
-    [leadMonths]
-  );
+  // Portfolio mode = no building selected
+  const portfolioMode = !selectedBuilding;
+  const totals = useMemo(() => portfolioTotals(), []);
 
-  // GRI / NOI in PLN
-  const griPln = 11_680_000;
-  const noiPln = 8_410_000;
+  // KPI numbers depend on mode (portfolio totals vs. Galeria Orkana building)
+  const griPln = portfolioMode ? totals.griPln : 11_680_000;
+  const noiPln = portfolioMode ? totals.noiPln : 8_410_000;
   const griFmt = fmtRent(griPln, { compact: true });
   const griMonthly = fmtRent(griPln / 12, { compact: true });
   const noiFmt = fmtRent(noiPln, { compact: true });
   const noiMonthly = fmtRent(noiPln / 12, { compact: true });
+
+  const waultLabel = portfolioMode ? `${totals.waultGriWeighted.toFixed(1)} yrs` : "4.2 yrs";
+  const noiYieldLabel = portfolioMode ? `${(totals.noiYield * 100).toFixed(1)}%` : "6.3%";
+  const noiYieldSub = portfolioMode
+    ? `NOI at assumed PLN 780M aggregate value`
+    : "NOI at PLN 134.5M asset value";
+  const occLabel = portfolioMode ? `${(totals.occupancy * 100).toFixed(1)}%` : "93.2%";
+  const occSub = portfolioMode
+    ? `${Math.round(totals.occupiedGla).toLocaleString()} of ${totals.gla.toLocaleString()} sqm · 5 buildings`
+    : "17,200 of 18,450 sqm";
+
+  // Alerts: portfolio-wide vs single building (Galeria Orkana only)
+  const allAlerts = portfolioMode
+    ? portfolioAlerts
+    : portfolioAlerts.filter((a) => a.building === (activePortfolio?.name ?? ""));
+  const visibleAlerts = useMemo(
+    () => allAlerts.filter((a) => a.days <= leadMonths * 30),
+    [allAlerts, leadMonths]
+  );
+
+  // Annual Rent by Building (portfolio mode), sorted desc, color by WAULT tier
+  const rentByBuilding = useMemo(() => {
+    const tone = (w: number) => (w < 1 ? C.red : w < 3 ? C.amber : C.green);
+    return [...PORTFOLIO]
+      .sort((a, b) => b.griPln - a.griPln)
+      .map((b) => ({ name: b.name, value: b.griPln, wault: b.wault, color: tone(b.wault) }));
+  }, []);
+
+  // Building Expiry Risk Matrix (portfolio mode)
+  const buildingRiskData = useMemo(() => {
+    const tone = (w: number) => (w < 1 ? "#ef4444" : w < 3 ? "#f59e0b" : "#22c55e");
+    return PORTFOLIO.map((b) => ({
+      tenant: b.name,
+      years: b.wault,
+      actualYears: b.wault,
+      rent: b.griPln,
+      gla: b.gla,
+      color: tone(b.wault),
+    }));
+  }, []);
 
   return (
     <div className="py-8 lg:py-12">
