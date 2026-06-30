@@ -36,7 +36,7 @@ export default function LeaseReview() {
   const [view, setView] = useState<ViewMode>("portfolio");
   const [filter, setFilter] = useState<string>("All Fields");
   const [collapsed, setCollapsed] = useState<Record<GroupKey, boolean>>({
-    Financial: false, Dates: false, Guarantees: false, Indexation: false, Obligations: false,
+    Financial: false, Dates: false, Renewal: false, Guarantees: false, Indexation: false, Obligations: false,
   });
   const [selected, setSelected] = useState<{ field: FieldKey; tenant: Tenant } | null>({
     field: "guaranteeStatus", tenant: "Café Roma",
