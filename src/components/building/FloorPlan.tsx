@@ -1,6 +1,5 @@
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { FLOORS, Floor, STATUS_FILL, Unit, unitsByFloor } from "./data";
 
 interface Props {
@@ -10,22 +9,32 @@ interface Props {
   onSelectUnit: (id: string) => void;
 }
 
-// Clean architectural ring layout: rectangular slots around a central atrium.
-// Slots are ordered LARGEST → SMALLEST and assigned to units sorted by sqm,
-// so footprint visually reflects unit size. No overlaps.
+// Architectural site-plan slots arranged around a central circular atrium.
+// Slots are ordered LARGEST → SMALLEST so the largest unit gets the largest
+// footprint regardless of array order in data.ts.
 interface Slot {
-  x: number; y: number; w: number; h: number;
+  points: string;       // polygon points
+  cx: number; cy: number; // centroid for number badge + labels
+  textAnchor?: "start" | "middle" | "end";
 }
 
 const SLOTS: Slot[] = [
-  { x: 60,  y: 40,  w: 780, h: 160 }, // 1. Top band (anchor)
-  { x: 560, y: 200, w: 280, h: 160 }, // 2. Right wing
-  { x: 60,  y: 200, w: 260, h: 160 }, // 3. Left wing
-  { x: 60,  y: 360, w: 280, h: 160 }, // 4. Bottom-1
-  { x: 340, y: 360, w: 175, h: 160 }, // 5. Bottom-2
-  { x: 515, y: 360, w: 150, h: 160 }, // 6. Bottom-3
-  { x: 665, y: 360, w: 100, h: 160 }, // 7. Bottom-4
-  { x: 765, y: 360, w: 75,  h: 160 }, // 8. Bottom-5
+  // 1. Largest east wing
+  { points: "590,110 870,140 880,470 575,470 535,355 535,205", cx: 715, cy: 295, textAnchor: "middle" },
+  // 2. Bottom-east wedge
+  { points: "535,355 575,470 760,540 870,540 870,470 575,470", cx: 705, cy: 495, textAnchor: "middle" },
+  // 3. Top spanning band above atrium
+  { points: "320,40 760,40 720,150 540,150 460,180 365,180", cx: 540, cy: 100, textAnchor: "middle" },
+  // 4. Lower-left wing
+  { points: "60,360 195,335 235,425 295,540 60,540", cx: 145, cy: 460, textAnchor: "middle" },
+  // 5. Top-left chunk
+  { points: "60,40 320,40 365,180 320,235 180,240 60,175", cx: 195, cy: 135, textAnchor: "middle" },
+  // 6. Mid-left slim band (yellow #6 in reference)
+  { points: "60,175 180,240 180,335 60,355", cx: 120, cy: 270, textAnchor: "middle" },
+  // 7. Bottom band between wings
+  { points: "295,540 575,470 575,540", cx: 460, cy: 520, textAnchor: "middle" },
+  // 8. Tiny atrium-adjacent wedge (lower-mid)
+  { points: "235,425 320,395 365,460 295,540", cx: 305, cy: 455, textAnchor: "middle" },
 ];
 
 // Hatch pattern stripe color per status
@@ -51,104 +60,43 @@ function UnitZone({
 }) {
   const h = HATCH[unit.status];
   const patternId = `hatch-${unit.status}-${index}`;
-  const cx = slot.x + slot.w / 2;
-  const cy = slot.y + slot.h / 2;
-  const showTenant = slot.w >= 110;
   return (
-    <HoverCard openDelay={80} closeDelay={50}>
-      <HoverCardTrigger asChild>
-        <g
-          onClick={onClick}
-          style={{
-            cursor: "pointer",
-            filter: selected ? "drop-shadow(0 0 10px hsl(var(--primary) / 0.7))" : undefined,
-          }}
+    <g
+      onClick={onClick}
+      style={{
+        cursor: "pointer",
+        filter: selected ? "drop-shadow(0 0 10px hsl(var(--primary) / 0.7))" : undefined,
+      }}
+    >
+      <defs>
+        <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+          <rect width="8" height="8" fill={h.bg} />
+          <line x1="0" y1="0" x2="0" y2="8" stroke={h.stripe} strokeWidth="2.5" strokeOpacity="0.75" />
+        </pattern>
+      </defs>
+      {/* Hatched fill */}
+      <polygon
+        points={slot.points}
+        fill={`url(#${patternId})`}
+        stroke={selected ? "hsl(var(--primary))" : h.outline}
+        strokeWidth={selected ? 3 : 2}
+        strokeLinejoin="round"
+      />
+      {/* Numbered badge */}
+      <g>
+        <circle cx={slot.cx} cy={slot.cy} r={14} fill="hsl(var(--card))" stroke={h.outline} strokeWidth={1.5} />
+        <text
+          x={slot.cx}
+          y={slot.cy + 4}
+          textAnchor="middle"
+          fontSize={13}
+          fontWeight={700}
+          fill="hsl(var(--foreground))"
         >
-          <defs>
-            <pattern id={patternId} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
-              <rect width="8" height="8" fill={h.bg} />
-              <line x1="0" y1="0" x2="0" y2="8" stroke={h.stripe} strokeWidth="2.5" strokeOpacity="0.8" />
-            </pattern>
-          </defs>
-          <rect
-            x={slot.x}
-            y={slot.y}
-            width={slot.w}
-            height={slot.h}
-            rx={6}
-            fill={`url(#${patternId})`}
-            stroke={selected ? "hsl(var(--primary))" : h.outline}
-            strokeWidth={selected ? 3 : 2}
-          />
-          {/* Numbered badge */}
-          <circle cx={slot.x + 18} cy={slot.y + 18} r={13} fill="hsl(var(--card))" stroke={h.outline} strokeWidth={1.5} />
-          <text
-            x={slot.x + 18}
-            y={slot.y + 22}
-            textAnchor="middle"
-            fontSize={12}
-            fontWeight={700}
-            fill="hsl(var(--foreground))"
-          >
-            {index + 1}
-          </text>
-          {showTenant && (
-            <text
-              x={cx}
-              y={cy + 4}
-              textAnchor="middle"
-              fontSize={13}
-              fontWeight={600}
-              fill="hsl(var(--foreground))"
-              style={{ pointerEvents: "none" }}
-            >
-              {unit.tenant}
-            </text>
-          )}
-          {showTenant && (
-            <text
-              x={cx}
-              y={cy + 22}
-              textAnchor="middle"
-              fontSize={11}
-              fill="hsl(var(--muted-foreground))"
-              style={{ pointerEvents: "none" }}
-            >
-              {unit.sqm.toLocaleString()} m²
-            </text>
-          )}
-        </g>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-64 p-3">
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-sm truncate">{unit.tenant}</span>
-            <span
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-              style={{ background: `${HATCH[unit.status].bg}`, color: HATCH[unit.status].outline }}
-            >
-              {unit.statusLabel}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-            <span className="text-muted-foreground">Unit</span>
-            <span className="text-right font-medium">{unit.id}</span>
-            <span className="text-muted-foreground">Area</span>
-            <span className="text-right font-medium">{unit.sqm.toLocaleString()} m²</span>
-            <span className="text-muted-foreground">WAULT</span>
-            <span className="text-right font-medium">{unit.wault}</span>
-            {unit.expiry && (<><span className="text-muted-foreground">Expiry</span><span className="text-right font-medium">{unit.expiry}</span></>)}
-            {unit.annualRent && (<><span className="text-muted-foreground">Annual rent</span><span className="text-right font-medium">€{unit.annualRent.toLocaleString()}</span></>)}
-            {unit.rentPerM2 && (<><span className="text-muted-foreground">Rent / m²</span><span className="text-right font-medium">€{unit.rentPerM2.toLocaleString()}</span></>)}
-          </div>
-          {unit.alert && (
-            <div className="text-[11px] mt-1 px-2 py-1 rounded bg-destructive/10 text-destructive font-medium">
-              ⚠ {unit.alert}
-            </div>
-          )}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
+          {index + 1}
+        </text>
+      </g>
+    </g>
   );
 }
 
@@ -186,18 +134,18 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
 
       <div className="rounded-lg overflow-hidden border border-border bg-muted/30">
         <svg
-          viewBox="0 0 900 560"
+          viewBox="0 0 900 580"
           className="w-full h-auto block"
           preserveAspectRatio="xMidYMid meet"
         >
           {/* Building zone labels */}
-          <text x={840} y={28} fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="end" letterSpacing="1.5">
+          <text x={760} y={28} fontSize={13} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="end" letterSpacing="1">
             EAST WING
           </text>
-          <text x={60} y={28} fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="start" letterSpacing="1.5">
+          <text x={140} y={28} fontSize={13} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="start" letterSpacing="1">
             WEST WING
           </text>
-          <text x={450} y={550} fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="middle" letterSpacing="1.5">
+          <text x={450} y={570} fontSize={13} fontWeight={600} fill="hsl(var(--muted-foreground))" textAnchor="middle" letterSpacing="1">
             SOUTH PROMENADE
           </text>
 
@@ -231,27 +179,26 @@ export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }
 
           {/* Central atrium */}
           <g>
-            <rect
-              x={330}
-              y={210}
-              width={220}
-              height={140}
-              rx={10}
+            <ellipse
+              cx={440}
+              cy={290}
+              rx={108}
+              ry={88}
               fill="hsl(var(--card))"
               stroke="hsl(var(--border))"
               strokeWidth={1.5}
-              strokeDasharray="5 4"
+              strokeDasharray="4 3"
             />
-            <text x={440} y={275} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" letterSpacing="2">
+            <text x={440} y={285} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" letterSpacing="2">
               CENTRAL
             </text>
-            <text x={440} y={292} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" letterSpacing="2">
+            <text x={440} y={302} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--muted-foreground))" letterSpacing="2">
               ATRIUM
             </text>
           </g>
 
           {/* Compass */}
-          <g transform="translate(870, 540)">
+          <g transform="translate(845, 50)">
             <circle cx={0} cy={0} r={16} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
             <path d="M0 -12 L5 5 L0 1 L-5 5 Z" fill="hsl(var(--foreground))" />
             <text x={0} y={-20} fontSize={9} fill="hsl(var(--muted-foreground))" textAnchor="middle" fontWeight={600}>
