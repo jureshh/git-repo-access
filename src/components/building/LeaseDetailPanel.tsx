@@ -37,10 +37,16 @@ const Field = ({
   value: React.ReactNode;
   source?: string;
 }) => (
-  <div className="flex flex-wrap items-baseline gap-x-2">
-    <span className="text-muted-foreground text-xs w-32 shrink-0">{label}</span>
-    <span className="text-foreground">{value}</span>
-    {source && <SourceLink>Source: {source}</SourceLink>}
+  <div className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-0.5 items-start">
+    <span className="text-muted-foreground text-xs pt-0.5">{label}</span>
+    <div className="text-foreground min-w-0">
+      <div>{value}</div>
+      {source && (
+        <div className="text-[11px] text-muted-foreground mt-0.5">
+          <SourceLink>Source: {source}</SourceLink>
+        </div>
+      )}
+    </div>
   </div>
 );
 
@@ -50,23 +56,39 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
   const fmtRent = useFormatRent();
   const fmtAM = useFormatAnnualMonthly();
 
-  const rentLine = (pln: number) => {
+  const rentLine = (pln: number, note?: string) => {
     const am = fmtAM(pln);
     return (
-      <span>
-        <span className="font-semibold">{am.primary}</span>{" "}
-        <span className="text-xs text-muted-foreground">{am.secondary}</span>
-      </span>
+      <div className="flex flex-col leading-tight">
+        <span className="font-semibold tabular-nums">{am.primary}</span>
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {am.secondary}
+          {note ? ` · ${note}` : ""}
+        </span>
+      </div>
     );
   };
 
   const perM2Line = (pln: number) => {
     const r = fmtRent(pln, { suffix: "/m²" });
     return (
-      <span>
-        <span className="font-semibold">{r.primary}</span>{" "}
-        <span className="text-xs text-muted-foreground">{r.secondary}</span>
-      </span>
+      <div className="flex flex-col leading-tight">
+        <span className="font-semibold tabular-nums">{r.primary}</span>
+        <span className="text-[11px] text-muted-foreground tabular-nums">{r.secondary}</span>
+      </div>
+    );
+  };
+
+  const amountLine = (pln: number, note?: string) => {
+    const r = fmtRent(pln);
+    return (
+      <div className="flex flex-col leading-tight">
+        <span className="font-semibold tabular-nums">{r.primary}</span>
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {r.secondary}
+          {note ? ` · ${note}` : ""}
+        </span>
+      </div>
     );
   };
 
@@ -102,15 +124,10 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
               <Field label="Annual Rent" value={rentLine(180_000)} />
               <Field
                 label="Effective Rent"
-                value={
-                  <span>
-                    {rentLine(162_000)}{" "}
-                    <span className="text-xs text-muted-foreground">(after 2-mo rent-free, Annex 2)</span>
-                  </span>
-                }
+                value={rentLine(162_000, "after 2-mo rent-free, Annex 2")}
                 source="§4.1 — Base Lease, p. 12"
               />
-              <Field label="Step Rent" value={<span>Yes — +3% in Year 3, +3% in Year 5</span>} source="§4.3 — Base Lease, p. 13" />
+              <Field label="Step Rent" value="Yes — +3% in Year 3, +3% in Year 5" source="§4.3 — Base Lease, p. 13" />
             </Section>
 
             <Section title="Lease Term">
@@ -141,7 +158,7 @@ export function LeaseDetailPanel({ unit, onClose }: Props) {
             </Section>
 
             <Section title="Bank Guarantee">
-              <Field label="Amount" value={<span>{fmtRent(54_000).primary} <span className="text-xs text-muted-foreground">{fmtRent(54_000).secondary}</span> · 3 months rent</span>} />
+              <Field label="Amount" value={amountLine(54_000, "3 months rent")} />
               <Field label="Guarantor" value="PKO Bank Polski S.A." />
               <Field label="Expiry" value="30 Apr 2026" />
               <Field
