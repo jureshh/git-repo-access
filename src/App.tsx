@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/Layout";
+import { CurrencyProvider } from "@/lib/currency";
 import Landing from "./pages/Landing";
 import UploadPage from "./pages/UploadPage";
 import Dashboard from "./pages/Dashboard";
@@ -21,8 +22,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Layout>
+      <CurrencyProvider>
+        <BrowserRouter>
+          <Layout>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/upload" element={<UploadPage />} />
@@ -35,8 +37,9 @@ const App = () => (
             <Route path="/investigations/:slug" element={<Investigations />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </Layout>
-      </BrowserRouter>
+          </Layout>
+        </BrowserRouter>
+      </CurrencyProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
