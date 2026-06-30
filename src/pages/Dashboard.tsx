@@ -353,41 +353,41 @@ export default function Dashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-muted/60">
-                  <tr className="text-left">
-                    {["Tenant", "GLA (sqm)", "Headline Rent (PLN/yr)", "Rent/m²", "Effective Rent (PLN/yr)", "Variance", "Next Indexation", "WAULT"].map((h) => (
-                      <th key={h} className="px-3 py-2.5 font-semibold border-b whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
+                   <tr className="text-left">
+                     {["Tenant", "GLA (sqm)", `Headline Rent (${curSym}/yr)`, `Rent/m² (${curSym})`, `Effective Rent (${curSym}/yr)`, `Variance (${curSym})`, "Next Indexation", "WAULT"].map((h) => (
+                       <th key={h} className="px-3 py-2.5 font-semibold border-b whitespace-nowrap">{h}</th>
+                     ))}
+                   </tr>
                 </thead>
                 <tbody>
                   {financialRows.map((r, i) => (
-                    <tr key={r.t} className={cn(i % 2 === 1 ? "bg-muted/20" : "bg-card", "border-b")}>
-                      <td className="px-3 py-2 font-medium">{r.t}</td>
-                      <td className="px-3 py-2 font-mono">{fmt(r.gla)}</td>
-                      <td className="px-3 py-2 font-mono">{fmt(r.head)}</td>
-                      <td className="px-3 py-2 font-mono">{fmt(r.perM2)}</td>
-                      <td className="px-3 py-2 font-mono">{fmt(r.eff)}</td>
-                      <td className={cn("px-3 py-2 font-mono", r.var < 0 && "text-destructive font-semibold")}>
-                        {r.var === 0 ? "—" : (
-                          <span className="inline-flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" /> {r.var.toLocaleString()}
-                          </span>
-                        )}
-                      </td>
+                     <tr key={r.t} className={cn(i % 2 === 1 ? "bg-muted/20" : "bg-card", "border-b")}>
+                       <td className="px-3 py-2 font-medium">{r.t}</td>
+                       <td className="px-3 py-2 font-mono">{fmt(r.gla)}</td>
+                       <td className="px-3 py-2 font-mono">{fmt(convCur(r.head))}</td>
+                       <td className="px-3 py-2 font-mono">{fmt(convCur(r.perM2))}</td>
+                       <td className="px-3 py-2 font-mono">{fmt(convCur(r.eff))}</td>
+                       <td className={cn("px-3 py-2 font-mono", r.var < 0 && "text-destructive font-semibold")}>
+                         {r.var === 0 ? "—" : (
+                           <span className="inline-flex items-center gap-1">
+                             <AlertTriangle className="h-3 w-3" /> {fmt(convCur(r.var))}
+                           </span>
+                         )}
+                       </td>
                       <td className="px-3 py-2">{r.nxt}</td>
                       <td className="px-3 py-2 font-mono">{r.w}</td>
                     </tr>
                   ))}
-                  <tr className="bg-muted/60 font-semibold border-t-2">
-                    <td className="px-3 py-2.5">Total</td>
-                    <td className="px-3 py-2.5 font-mono">3,960</td>
-                    <td className="px-3 py-2.5 font-mono">3,119,750</td>
-                    <td className="px-3 py-2.5 font-mono">788</td>
-                    <td className="px-3 py-2.5 font-mono">3,101,750</td>
-                    <td className="px-3 py-2.5 font-mono text-destructive">-18,000</td>
-                    <td className="px-3 py-2.5">—</td>
-                    <td className="px-3 py-2.5 font-mono">4.2</td>
-                  </tr>
+                   <tr className="bg-muted/60 font-semibold border-t-2">
+                     <td className="px-3 py-2.5">Total</td>
+                     <td className="px-3 py-2.5 font-mono">3,960</td>
+                     <td className="px-3 py-2.5 font-mono">{fmt(convCur(3_119_750))}</td>
+                     <td className="px-3 py-2.5 font-mono">{fmt(convCur(788))}</td>
+                     <td className="px-3 py-2.5 font-mono">{fmt(convCur(3_101_750))}</td>
+                     <td className="px-3 py-2.5 font-mono text-destructive">{fmt(convCur(-18_000))}</td>
+                     <td className="px-3 py-2.5">—</td>
+                     <td className="px-3 py-2.5 font-mono">4.2</td>
+                   </tr>
                 </tbody>
               </table>
             </div>
