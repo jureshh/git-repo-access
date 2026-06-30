@@ -465,6 +465,63 @@ export default function Dashboard() {
             Data extracted: 22 May 2026 · LeaseOS Demo Mode
           </p>
         </div>
+
+        {/* Building Detail Section (only when a live building is selected) */}
+        {liveBuilding && (
+          <div ref={buildingSectionRef} className="pt-8 mt-4 border-t-2 border-dashed border-border">
+            <div className="-mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 bg-muted/30 rounded-xl space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-display font-bold">
+                    Building Detail: {liveBuilding.name}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {liveBuilding.city} · Stacking plan, units &amp; lease economics
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {selectedUnit && (
+                    <button
+                      onClick={() => setSelectedUnitId(null)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium hover:bg-primary/15"
+                    >
+                      Showing: {selectedUnit.tenant}
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                    className="inline-flex items-center gap-1.5 text-xs text-primary font-medium hover:underline"
+                  >
+                    <ArrowUp className="h-3 w-3" /> Portfolio Overview
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
+                <div className="lg:col-span-3">
+                  <FloorPlan
+                    floor={floor}
+                    onFloorChange={(f) => { setFloor(f); setSelectedUnitId(null); }}
+                    selectedUnitId={selectedUnitId}
+                    onSelectUnit={setSelectedUnitId}
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  {selectedUnit ? (
+                    <LeaseDetailPanel unit={selectedUnit} onClose={() => setSelectedUnitId(null)} />
+                  ) : (
+                    <UnitTable
+                      units={filteredUnits}
+                      selectedUnitId={selectedUnitId}
+                      onSelectUnit={setSelectedUnitId}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
