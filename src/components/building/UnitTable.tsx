@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { STATUS_META, Unit } from "./data";
+import { useFormatRent } from "@/lib/currency";
 
 interface Props {
   units: Unit[];
@@ -7,9 +8,28 @@ interface Props {
   onSelectUnit: (id: string) => void;
 }
 
-const formatPLN = (v?: number) => (v == null ? "—" : `PLN ${v.toLocaleString()}`);
-
 export function UnitTable({ units, selectedUnitId, onSelectUnit }: Props) {
+  const fmtRent = useFormatRent();
+  const renderRent = (v?: number) => {
+    if (v == null) return "—";
+    const r = fmtRent(v);
+    return (
+      <span className="whitespace-nowrap">
+        <span className="font-medium text-foreground">{r.primary}</span>
+        <span className="block text-[10px] text-muted-foreground">{r.secondary}</span>
+      </span>
+    );
+  };
+  const renderPerM2 = (v?: number) => {
+    if (v == null) return "—";
+    const r = fmtRent(v, { suffix: "/m²" });
+    return (
+      <span className="whitespace-nowrap">
+        <span className="font-medium text-foreground">{r.primary}</span>
+        <span className="block text-[10px] text-muted-foreground">{r.secondary}</span>
+      </span>
+    );
+  };
   return (
     <Card className="glass flex flex-col overflow-hidden">
       <div className="px-5 py-4 border-b border-border">
@@ -47,8 +67,8 @@ export function UnitTable({ units, selectedUnitId, onSelectUnit }: Props) {
                   <td className="px-3 py-2.5 font-medium text-foreground">{u.id}</td>
                   <td className="px-3 py-2.5 text-foreground">{u.tenant}</td>
                   <td className="px-3 py-2.5 text-muted-foreground">{u.sqm.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 text-muted-foreground">{formatPLN(u.annualRent)}</td>
-                  <td className="px-3 py-2.5 text-muted-foreground">{formatPLN(u.rentPerM2)}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground">{renderRent(u.annualRent)}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground">{renderPerM2(u.rentPerM2)}</td>
                   <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
                     {u.expiry ?? "—"}
                   </td>
