@@ -235,7 +235,7 @@ export default function Dashboard() {
                   tickFormatter={(v) => fmtCompact(v)}
                   label={{ value: `Annual Rent (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
                 />
-                <ZAxis type="number" dataKey="gla" range={[8, 40]} name="GLA" />
+                <ZAxis type="number" dataKey="gla" domain={[50, 2000]} range={[60, 1600]} name="GLA" />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   content={({ active, payload }) => {
