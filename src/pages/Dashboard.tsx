@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import {
@@ -9,8 +9,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LabelList, Cell, ReferenceLine, ScatterChart, Scatter, ZAxis, ReferenceArea,
 } from "recharts";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, ArrowUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BuildingNavBar, BUILDINGS } from "@/components/dashboard/BuildingNavBar";
+import { FloorPlan } from "@/components/building/FloorPlan";
+import { LeaseDetailPanel } from "@/components/building/LeaseDetailPanel";
+import { UnitTable } from "@/components/building/UnitTable";
+import { Floor, unitsByFloor } from "@/components/building/data";
+import { Badge } from "@/components/ui/badge";
 
 const C = {
   teal: "hsl(var(--primary))",
