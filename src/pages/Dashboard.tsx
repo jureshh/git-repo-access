@@ -593,11 +593,11 @@ export default function Dashboard() {
           <div className="grid md:grid-cols-2 gap-4">
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Current NOI Yield</p>
-              <p className="text-sm">{noiYieldLabel} — {noiYieldSub}</p>
+              <p className="text-sm">{noiYieldLabel}</p>
             </Card>
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Identified Leakage</p>
-              <p className="text-sm">{portfolioMode ? "PLN 18,000/yr — Café Roma (Galeria Orkana) effective rent below headline (Annex 2 rent-free)" : "PLN 18,000/yr — Café Roma effective rent below headline (Annex 2 rent-free)"}</p>
+              <p className="text-sm">{portfolioMode ? "PLN 18,000/yr — Café Roma (Galeria Verano) effective rent below headline (Annex 2 rent-free)" : "PLN 18,000/yr — Café Roma effective rent below headline (Annex 2 rent-free)"}</p>
             </Card>
           </div>
 
