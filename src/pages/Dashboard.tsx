@@ -334,10 +334,23 @@ export default function Dashboard() {
               {portfolioMode ? "Sorted descending by GRI · colored by WAULT risk tier." : "Hover for monthly equivalent."}
             </p>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartRent} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 5 }}>
+              <BarChart
+                data={chartRent}
+                layout={portfolioMode ? "horizontal" : "vertical"}
+                margin={portfolioMode ? { top: 20, right: 10, left: 0, bottom: 5 } : { top: 5, right: 60, left: 10, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
-                <YAxis dataKey="tenant" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={110} />
+                {portfolioMode ? (
+                  <>
+                    <XAxis dataKey="tenant" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" interval={0} />
+                    <YAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
+                  </>
+                ) : (
+                  <>
+                    <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
+                    <YAxis dataKey="tenant" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={110} />
+                  </>
+                )}
                 <Tooltip
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
@@ -354,12 +367,12 @@ export default function Dashboard() {
                 />
                 <Bar
                   dataKey="value"
-                  radius={[0, 6, 6, 0]}
+                  radius={portfolioMode ? [6, 6, 0, 0] : [0, 6, 6, 0]}
                   cursor={allowChartClick ? "pointer" : "default"}
                   onClick={(d: { tenant?: string } | undefined) => allowChartClick && d?.tenant && handleSelectTenantFromChart(d.tenant)}
                 >
                   {chartRent.map((d, i) => <Cell key={i} fill={d.color} />)}
-                  <LabelList dataKey="value" position="right" formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
+                  <LabelList dataKey="value" position={portfolioMode ? "top" : "right"} formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
