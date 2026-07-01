@@ -158,22 +158,19 @@ export default function Dashboard() {
   const portfolioMode = !selectedBuilding;
   const totals = useMemo(() => portfolioTotals(), []);
 
-  // KPI numbers depend on mode (portfolio totals vs. Galeria Orkana building)
-  const griPln = portfolioMode ? totals.griPln : 11_680_000;
-  const noiPln = portfolioMode ? totals.noiPln : 8_410_000;
+  // KPI numbers depend on mode (portfolio totals vs. Galeria Verano building)
+  const griPln = portfolioMode ? totals.griPln : 23_650_000;
+  const noiPln = portfolioMode ? totals.noiPln : 17_028_000;
   const griFmt = fmtRent(griPln, { compact: true });
   const griMonthly = fmtRent(griPln / 12, { compact: true });
   const noiFmt = fmtRent(noiPln, { compact: true });
   const noiMonthly = fmtRent(noiPln / 12, { compact: true });
 
   const waultLabel = portfolioMode ? `${totals.waultGriWeighted.toFixed(1)} yrs` : "4.2 yrs";
-  const noiYieldLabel = portfolioMode ? `${(totals.noiYield * 100).toFixed(1)}%` : "6.3%";
-  const noiYieldSub = portfolioMode
-    ? `NOI at assumed PLN 780M aggregate value`
-    : "NOI at PLN 134.5M asset value";
+  const noiYieldLabel = portfolioMode ? `${(totals.noiYield * 100).toFixed(1)}%` : "6.0%";
   const occLabel = portfolioMode ? `${(totals.occupancy * 100).toFixed(1)}%` : "93.2%";
   const occSub = portfolioMode
-    ? `${Math.round(totals.occupiedGla).toLocaleString()} of ${totals.gla.toLocaleString()} sqm · 5 buildings`
+    ? `${Math.round(totals.occupiedGla).toLocaleString()} of ${totals.gla.toLocaleString()} sqm across ${PORTFOLIO.length} buildings`
     : "17,200 of 18,450 sqm";
 
   // Alerts: portfolio-wide vs single building (Galeria Orkana only)
@@ -185,24 +182,44 @@ export default function Dashboard() {
     [allAlerts, leadMonths]
   );
 
-  // Annual Rent by Building (portfolio mode), sorted desc, color by WAULT tier
+  // Size-adjusted risk tier — anchor-scale (>20,000 sqm) assets need longer
+  // backfill lead time, so we widen the thresholds outward. Bulwary (33.5k
+  // sqm, 6.0 yrs WAULT) intentionally trips Critical under this rule.
+  const buildingRiskTier = (wault: number, gla: number): "critical" | "watch" | "safe" => {
+    if (gla > 20_000) {
+      if (wault <= 6) return "critical";
+      if (wault <= 8) return "watch";
+      return "safe";
+    }
+    if (wault < 1) return "critical";
+    if (wault < 3) return "watch";
+    return "safe";
+  };
+  const tierColor = (t: "critical" | "watch" | "safe") =>
+    t === "critical" ? "#ef4444" : t === "watch" ? "#f59e0b" : "#22c55e";
+
+  // Annual Rent by Building (portfolio mode), sorted desc, color by size-adjusted WAULT tier
   const rentByBuilding = useMemo(() => {
-    const tone = (w: number) => (w < 1 ? C.red : w < 3 ? C.amber : C.green);
     return [...PORTFOLIO]
       .sort((a, b) => b.griPln - a.griPln)
-      .map((b) => ({ name: b.name, value: b.griPln, wault: b.wault, color: tone(b.wault) }));
+      .map((b) => ({
+        name: b.name,
+        value: b.griPln,
+        wault: b.wault,
+        color: tierColor(buildingRiskTier(b.wault, b.gla)),
+      }));
   }, []);
 
   // Building Expiry Risk Matrix (portfolio mode)
   const buildingRiskData = useMemo(() => {
-    const tone = (w: number) => (w < 1 ? "#ef4444" : w < 3 ? "#f59e0b" : "#22c55e");
     return PORTFOLIO.map((b) => ({
       tenant: b.name,
       years: b.wault,
       actualYears: b.wault,
       rent: b.griPln,
       gla: b.gla,
-      color: tone(b.wault),
+      color: tierColor(buildingRiskTier(b.wault, b.gla)),
+      sizeAdjusted: b.gla > 20_000,
     }));
   }, []);
 
@@ -273,7 +290,7 @@ export default function Dashboard() {
         {/* KPI row */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <KpiTile label="WAULT" value={waultLabel} sub={portfolioMode ? "GRI-weighted across portfolio" : "Weighted avg unexpired lease term"} tone={C.teal} />
-          <KpiTile label="Current NOI Yield" value={noiYieldLabel} sub={noiYieldSub} tone={C.teal} />
+          <KpiTile label="Current NOI Yield" value={noiYieldLabel} sub="" tone={C.teal} />
           <KpiTile
             label="GRI"
             value={griFmt.primary}
@@ -285,7 +302,7 @@ export default function Dashboard() {
             label="NOI"
             value={noiFmt.primary}
             sub={noiFmt.secondary}
-            detail={`${noiMonthly.primary}/mo · 72.0% NOI margin`}
+            detail={`${noiMonthly.primary}/mo`}
             tone={C.blue}
           />
           <KpiTile label="Occupied GLA" value={occLabel} sub={occSub} tone={C.green} />
@@ -317,10 +334,23 @@ export default function Dashboard() {
               {portfolioMode ? "Sorted descending by GRI · colored by WAULT risk tier." : "Hover for monthly equivalent."}
             </p>
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartRent} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 5 }}>
+              <BarChart
+                data={chartRent}
+                layout={portfolioMode ? "horizontal" : "vertical"}
+                margin={portfolioMode ? { top: 20, right: 10, left: 0, bottom: 5 } : { top: 5, right: 60, left: 10, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
-                <YAxis dataKey="tenant" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={110} />
+                {portfolioMode ? (
+                  <>
+                    <XAxis dataKey="tenant" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" interval={0} />
+                    <YAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
+                  </>
+                ) : (
+                  <>
+                    <XAxis type="number" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => fmtCompact(v)} />
+                    <YAxis dataKey="tenant" type="category" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={110} />
+                  </>
+                )}
                 <Tooltip
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
@@ -337,12 +367,12 @@ export default function Dashboard() {
                 />
                 <Bar
                   dataKey="value"
-                  radius={[0, 6, 6, 0]}
+                  radius={portfolioMode ? [6, 6, 0, 0] : [0, 6, 6, 0]}
                   cursor={allowChartClick ? "pointer" : "default"}
                   onClick={(d: { tenant?: string } | undefined) => allowChartClick && d?.tenant && handleSelectTenantFromChart(d.tenant)}
                 >
                   {chartRent.map((d, i) => <Cell key={i} fill={d.color} />)}
-                  <LabelList dataKey="value" position="right" formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
+                  <LabelList dataKey="value" position={portfolioMode ? "top" : "right"} formatter={(v: number) => fmtCompact(v)} style={{ fontSize: 10, fill: "hsl(var(--foreground))" }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -358,6 +388,11 @@ export default function Dashboard() {
                 ? "Bubble size = GLA. Position = building WAULT vs GRI."
                 : "Bubble size = GLA. Position = years until lease expiry vs annual rent."}
             </p>
+            {portfolioMode && (
+              <p className="text-[11px] text-muted-foreground italic -mt-3 mb-3">
+                Large-format assets (&gt;20,000 sqm) use extended risk thresholds — longer backfill lead time required for anchor-scale vacancies.
+              </p>
+            )}
             <ResponsiveContainer width="100%" height={320}>
               <ScatterChart margin={{ top: 16, right: 30, left: 10, bottom: 28 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -387,7 +422,13 @@ export default function Dashboard() {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as typeof expiryRiskData[number];
                     const wLabel = `${d.actualYears} yrs`;
-                    const tier = d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable";
+                    const dp = payload[0].payload as { actualYears: number; gla: number; tenant: string; rent: number };
+                    const isLarge = dp.gla > 20_000;
+                    const tier = portfolioMode
+                      ? (isLarge
+                          ? (dp.actualYears <= 6 ? "Critical" : dp.actualYears <= 8 ? "Watch" : "Stable")
+                          : (dp.actualYears < 1 ? "Critical" : dp.actualYears < 3 ? "Watch" : "Stable"))
+                      : (d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable");
                     const am = fmtAM(d.rent);
                     return (
                       <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
@@ -396,7 +437,7 @@ export default function Dashboard() {
                         <div>{am.primary}</div>
                         <div className="text-muted-foreground">{am.secondary}</div>
                         <div>GLA: {d.gla.toLocaleString()} m²</div>
-                        <div>Risk tier: {tier}</div>
+                        <div>Risk tier: {tier}{portfolioMode && isLarge ? " (size-adjusted)" : ""}</div>
                       </div>
                     );
                   }}
@@ -576,11 +617,11 @@ export default function Dashboard() {
           <div className="grid md:grid-cols-2 gap-4">
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Current NOI Yield</p>
-              <p className="text-sm">{noiYieldLabel} — {noiYieldSub}</p>
+              <p className="text-sm">{noiYieldLabel}</p>
             </Card>
             <Card className="p-4 border-l-4 border-l-primary">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Identified Leakage</p>
-              <p className="text-sm">{portfolioMode ? "PLN 18,000/yr — Café Roma (Galeria Orkana) effective rent below headline (Annex 2 rent-free)" : "PLN 18,000/yr — Café Roma effective rent below headline (Annex 2 rent-free)"}</p>
+              <p className="text-sm">{portfolioMode ? "PLN 18,000/yr — Café Roma (Galeria Verano) effective rent below headline (Annex 2 rent-free)" : "PLN 18,000/yr — Café Roma effective rent below headline (Annex 2 rent-free)"}</p>
             </Card>
           </div>
 
