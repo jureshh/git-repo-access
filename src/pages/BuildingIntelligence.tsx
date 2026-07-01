@@ -1,21 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FloorPlan } from "@/components/building/FloorPlan";
 import { LeaseDetailPanel } from "@/components/building/LeaseDetailPanel";
 import { SummaryBar } from "@/components/building/SummaryBar";
 import { UnitTable } from "@/components/building/UnitTable";
-import { Floor, unitsByFloor } from "@/components/building/data";
+import { FLOORS, unitsByFloor } from "@/components/building/data";
 
 export default function BuildingIntelligence() {
-  const [floor, setFloor] = useState<Floor>("2");
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>("2-B1");
 
-  const units = unitsByFloor[floor];
-  const selectedUnit = units.find((u) => u.id === selectedUnitId) ?? null;
-
-  const handleFloorChange = (f: Floor) => {
-    setFloor(f);
-    setSelectedUnitId(null);
-  };
+  const allUnits = useMemo(() => FLOORS.flatMap((f) => unitsByFloor[f]), []);
+  const selectedUnit = allUnits.find((u) => u.id === selectedUnitId) ?? null;
+  const sideUnits = selectedUnit
+    ? unitsByFloor[
+        (FLOORS.find((f) => unitsByFloor[f].some((u) => u.id === selectedUnit.id)) ?? "2")
+      ]
+    : allUnits;
 
   return (
     <div className="py-4 lg:py-6">
@@ -30,8 +29,6 @@ export default function BuildingIntelligence() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
           <div className="lg:col-span-3">
             <FloorPlan
-              floor={floor}
-              onFloorChange={handleFloorChange}
               selectedUnitId={selectedUnitId}
               onSelectUnit={setSelectedUnitId}
             />
@@ -41,7 +38,7 @@ export default function BuildingIntelligence() {
               <LeaseDetailPanel unit={selectedUnit} onClose={() => setSelectedUnitId(null)} />
             ) : (
               <UnitTable
-                units={units}
+                units={sideUnits}
                 selectedUnitId={selectedUnitId}
                 onSelectUnit={setSelectedUnitId}
               />
