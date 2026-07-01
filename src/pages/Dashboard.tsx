@@ -94,6 +94,49 @@ const expiryRiskData = [
   { tenant: "Flagship Electronics", years: 9.2, actualYears: 9.2, rent: 720_000, gla: 900 },
 ].map((d) => ({ ...d, color: bubbleColor(d.actualYears, d.gla) }));
 
+// Key Tenants Expiry Risk (portfolio view). Bubbles are individual tenants,
+// spanning all 5 buildings. Verano tenants are document-extracted; the rest
+// are illustrative until those buildings' leases are ingested.
+type KeyTenant = {
+  tenant: string;
+  building: string;
+  years: number;
+  actualYears: number;
+  rent: number;   // EUR / yr
+  gla: number;    // sqm
+  source: "Extracted" | "Illustrative";
+};
+const keyTenantRaw: KeyTenant[] = [
+  { tenant: "Anchor – Fashion", building: "Galeria Verano", gla: 1_800, rent: 293_023, years: 6.1, actualYears: 6.1, source: "Extracted" },
+  { tenant: "Sport Zone",       building: "Galeria Verano", gla:   850, rent: 148_256, years: 1.9, actualYears: 1.9, source: "Extracted" },
+  { tenant: "Electronics Plus", building: "Galeria Verano", gla:   620, rent: 108_000, years: 1.0, actualYears: 1.0, source: "Extracted" },
+  { tenant: "Kids World",       building: "Galeria Verano", gla:   340, rent:  62_000, years: 1.5, actualYears: 1.5, source: "Extracted" },
+  { tenant: "Café Roma",        building: "Galeria Verano", gla:   180, rent:  41_860, years: 0.7, actualYears: 0.7, source: "Extracted" },
+  { tenant: "Jewellery Co",     building: "Galeria Verano", gla:    75, rent:  26_163, years: 0.4, actualYears: 0.4, source: "Extracted" },
+  { tenant: "Mercato Anchor",   building: "Aster! Piła",     gla: 9_000, rent: 1_980_000, years: 0.9, actualYears: 0.9, source: "Illustrative" },
+  { tenant: "MaxStyle",         building: "Aster! Krosno",   gla: 7_500, rent: 1_650_000, years: 2.3, actualYears: 2.3, source: "Illustrative" },
+  { tenant: "Cinema Town",      building: "Aster! Stalowa Wola", gla: 3_200, rent: 780_000, years: 0.9, actualYears: 0.9, source: "Illustrative" },
+  { tenant: "Modeva",           building: "Bulwary",         gla: 2_200, rent:   650_000, years: 0.4, actualYears: 0.4, source: "Illustrative" },
+  { tenant: "Moka Cola",        building: "Bulwary",         gla: 22_000, rent: 5_720_000, years: 5.5, actualYears: 5.5, source: "Illustrative" },
+];
+// Per-tenant size-adjusted thresholds (anchors > 20k sqm need longer runway).
+const tenantTier = (gla: number, years: number): "critical" | "watch" | "safe" => {
+  if (gla > 20_000) {
+    if (years < 6) return "critical";
+    if (years < 8) return "watch";
+    return "safe";
+  }
+  if (years < 1) return "critical";
+  if (years < 3) return "watch";
+  return "safe";
+};
+const tenantTierColor = (t: "critical" | "watch" | "safe") =>
+  t === "critical" ? "#ef4444" : t === "watch" ? "#f59e0b" : "#22c55e";
+const keyTenantsRiskData = keyTenantRaw.map((t) => {
+  const tier = tenantTier(t.gla, t.actualYears);
+  return { ...t, tier, color: tenantTierColor(tier) };
+});
+
 const alerts = [
   { tone: "red", tenant: "Café Roma", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
   { tone: "red", tenant: "Jewellery Co", desc: "Bank guarantee expires in", days: 63, source: "§14.1 p.31" },
