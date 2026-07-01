@@ -18,7 +18,7 @@ const allNavItems = [
   { to: "/tenant-intelligence", label: "Tenants", icon: Users, badge: "9", key: "tenants" },
   { to: "/investigations", label: "Investigations", icon: Search, key: "investigations" },
   { to: "/lease-review", label: "Review", icon: FileSearch, key: "review" },
-  { to: "/ask-portfolio", label: "Ask Portfolio", icon: MessageSquare, key: "ask" },
+  { to: "/ask-portfolio", label: "Chat", icon: MessageSquare, key: "ask" },
 ];
 
 const navItems = allNavItems.filter((i) => {
