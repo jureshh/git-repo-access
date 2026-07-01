@@ -388,6 +388,11 @@ export default function Dashboard() {
                 ? "Bubble size = GLA. Position = building WAULT vs GRI."
                 : "Bubble size = GLA. Position = years until lease expiry vs annual rent."}
             </p>
+            {portfolioMode && (
+              <p className="text-[11px] text-muted-foreground italic -mt-3 mb-3">
+                Large-format assets (&gt;20,000 sqm) use extended risk thresholds — longer backfill lead time required for anchor-scale vacancies.
+              </p>
+            )}
             <ResponsiveContainer width="100%" height={320}>
               <ScatterChart margin={{ top: 16, right: 30, left: 10, bottom: 28 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
