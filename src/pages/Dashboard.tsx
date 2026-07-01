@@ -438,7 +438,7 @@ export default function Dashboard() {
             <h3 className="text-base font-display font-semibold">{riskChartTitle}</h3>
             <p className="text-xs text-muted-foreground mb-4">
               {portfolioMode
-                ? "Bubble size = GLA. Position = building WAULT vs GRI."
+                ? "Bubble size = tenant GLA. Position = years remaining vs annual rent. Largest tenants and flagged risks across the portfolio."
                 : "Bubble size = GLA. Position = years until lease expiry vs annual rent."}
             </p>
             {portfolioMode && (
@@ -468,29 +468,38 @@ export default function Dashboard() {
                   tickFormatter={(v) => fmtCompact(v)}
                   label={{ value: `${portfolioMode ? "GRI" : "Annual Rent"} (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
                 />
-                <ZAxis type="number" dataKey="gla" domain={portfolioMode ? [10_000, 40_000] : [50, 3000]} range={[80, 3200]} name="GLA" />
+                <ZAxis type="number" dataKey="gla" domain={portfolioMode ? [50, 25_000] : [50, 3000]} range={portfolioMode ? [80, 2400] : [80, 3200]} name="GLA" />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as typeof expiryRiskData[number];
                     const wLabel = `${d.actualYears} yrs`;
-                    const dp = payload[0].payload as { actualYears: number; gla: number; tenant: string; rent: number };
+                    const dp = payload[0].payload as {
+                      actualYears: number; gla: number; tenant: string; rent: number;
+                      building?: string; tier?: string; source?: "Extracted" | "Illustrative";
+                    };
                     const isLarge = dp.gla > 20_000;
                     const tier = portfolioMode
-                      ? (isLarge
-                          ? (dp.actualYears <= 6 ? "Critical" : dp.actualYears <= 8 ? "Watch" : "Stable")
-                          : (dp.actualYears < 1 ? "Critical" : dp.actualYears < 3 ? "Watch" : "Stable"))
+                      ? (dp.tier ? dp.tier.charAt(0).toUpperCase() + dp.tier.slice(1) : "—")
                       : (d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable");
                     const am = fmtAM(d.rent);
                     return (
                       <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
                         <div className="font-semibold mb-1">{d.tenant}</div>
+                        {portfolioMode && dp.building && (
+                          <div className="text-muted-foreground mb-1">{dp.building}</div>
+                        )}
                         <div>WAULT: {wLabel}</div>
                         <div>{am.primary}</div>
                         <div className="text-muted-foreground">{am.secondary}</div>
                         <div>GLA: {d.gla.toLocaleString()} m²</div>
                         <div>Risk tier: {tier}{portfolioMode && isLarge ? " (size-adjusted)" : ""}</div>
+                        {portfolioMode && dp.source && (
+                          <div className={cn("mt-1 text-[11px] italic", dp.source === "Extracted" ? "text-emerald-600" : "text-muted-foreground")}>
+                            {dp.source === "Extracted" ? "Source-verified" : "Illustrative — pending document extraction"}
+                          </div>
+                        )}
                       </div>
                     );
                   }}
@@ -510,9 +519,24 @@ export default function Dashboard() {
                   strokeDasharray="4 4"
                   label={{ value: "Watch", position: "top", fill: "#f59e0b", fontSize: 10 }}
                 />
+                {portfolioMode && (
+                  <ReferenceLine
+                    x={6}
+                    stroke="#ef4444"
+                    strokeDasharray="2 6"
+                    label={{ value: "Anchor Critical (>20k sqm)", position: "top", fill: "#ef4444", fontSize: 10 }}
+                  />
+                )}
                 <Scatter data={chartRisk}>
                   {chartRisk.map((d, i) => (
-                    <Cell key={i} fill={d.color} fillOpacity={0.7} stroke={d.color} />
+                    <Cell
+                      key={i}
+                      fill={d.color}
+                      fillOpacity={0.7}
+                      stroke={d.color}
+                      strokeWidth={2}
+                      strokeDasharray={portfolioMode && (d as { source?: string }).source === "Illustrative" ? "4 3" : undefined}
+                    />
                   ))}
                   <LabelList
                     dataKey="tenant"
@@ -523,6 +547,11 @@ export default function Dashboard() {
                 </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
+            {portfolioMode && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Solid border = document-extracted · Dashed border = illustrative estimate
+              </p>
+            )}
           </Card>
 
           <div ref={alertsRef} className="space-y-3">
