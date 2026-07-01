@@ -145,10 +145,46 @@ export const floor2Units: Unit[] = [
 ];
 
 export const unitsByFloor: Record<Floor, Unit[]> = {
-  GF: [],
-  "1": [],
+  GF: [
+    {
+      id: "GF-A1",
+      tenant: "Carrefour Hypermarket",
+      sqm: 6500,
+      status: "green",
+      wault: "7.4 yrs",
+      annualRent: 3_900_000,
+      rentPerM2: 600,
+      expiry: "31 Dec 2032",
+      statusLabel: "Secure",
+      x: 0, y: 0, w: 0, h: 0,
+    },
+  ],
+  "1": [
+    {
+      id: "1-A1",
+      tenant: "Multikino Cinema",
+      sqm: 6740,
+      status: "green",
+      wault: "8.2 yrs",
+      annualRent: 4_044_000,
+      rentPerM2: 600,
+      expiry: "30 Jun 2033",
+      statusLabel: "Secure",
+      x: 0, y: 0, w: 0, h: 0,
+    },
+  ],
   "2": floor2Units,
-  "3": [],
+  "3": [
+    {
+      id: "3-V1",
+      tenant: "[Vacant]",
+      sqm: 1040,
+      status: "grey",
+      wault: "—",
+      statusLabel: "Vacant",
+      x: 0, y: 0, w: 0, h: 0,
+    },
+  ],
 };
 
 // Status colors map to design tokens (resolved via CSS vars) for SVG use.
