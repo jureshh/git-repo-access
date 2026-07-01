@@ -532,24 +532,32 @@ export default function Dashboard() {
                     <Cell
                       key={i}
                       fill={d.color}
-                      fillOpacity={0.7}
+                      fillOpacity={0.65}
                       stroke={d.color}
                       strokeWidth={2}
-                      strokeDasharray={portfolioMode && (d as { source?: string }).source === "Illustrative" ? "4 3" : undefined}
                     />
                   ))}
                   <LabelList
                     dataKey="tenant"
                     position="right"
                     offset={10}
-                    style={{ fontSize: 11, fill: "hsl(var(--foreground))" }}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      fill: "hsl(var(--foreground))",
+                      stroke: "hsl(var(--background))",
+                      strokeWidth: 3,
+                      // Paint the stroke *behind* the fill so the text stays crisp
+                      // over overlapping bubbles.
+                      paintOrder: "stroke",
+                    } as React.CSSProperties}
                   />
                 </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
             {portfolioMode && (
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Solid border = document-extracted · Dashed border = illustrative estimate
+                Source (extracted vs illustrative) shown on hover.
               </p>
             )}
           </Card>
