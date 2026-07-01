@@ -258,16 +258,21 @@ export default function Dashboard() {
       }));
   }, []);
 
-  // Building Expiry Risk Matrix (portfolio mode)
-  const buildingRiskData = useMemo(() => {
-    return PORTFOLIO.map((b) => ({
-      tenant: b.name,
-      years: b.wault,
-      actualYears: b.wault,
-      rent: b.griPln,
-      gla: b.gla,
-      color: tierColor(buildingRiskTier(b.wault, b.gla)),
-      sizeAdjusted: b.gla > 20_000,
+  // Portfolio-mode risk chart: individual KEY TENANTS across all buildings.
+  // Rent is already in EUR — convert to PLN so the shared axis formatter
+  // (which lives in the currency provider) reads it in the active currency.
+  const keyTenantsChartData = useMemo(() => {
+    return keyTenantsRiskData.map((t) => ({
+      tenant: t.tenant,
+      building: t.building,
+      years: t.years,
+      actualYears: t.actualYears,
+      rent: t.rent * 4.30, // stored PLN -> currency provider converts back
+      rentEur: t.rent,
+      gla: t.gla,
+      color: t.color,
+      tier: t.tier,
+      source: t.source,
     }));
   }, []);
 
@@ -280,12 +285,12 @@ export default function Dashboard() {
   const chartRent = portfolioMode
     ? rentByBuilding.map((b) => ({ tenant: b.name, value: b.value, color: b.color }))
     : rentData;
-  const chartRisk = portfolioMode ? buildingRiskData : expiryRiskData;
+  const chartRisk = portfolioMode ? keyTenantsChartData : expiryRiskData;
   const rentChartTitle = portfolioMode
     ? `Annual Rent by Building (${display})`
     : `Annual Rent by Tenant (${display})`;
   const riskChartTitle = portfolioMode
-    ? "Building Expiry Risk Matrix (0–10 Years)"
+    ? "Key Tenants Expiry Risk"
     : "Tenant Expiry Risk Matrix (0–10 Years)";
   const allowChartClick = !portfolioMode;
 
