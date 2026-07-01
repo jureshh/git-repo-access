@@ -15,7 +15,7 @@ const SUGGESTED: { prompt: string; reply: ScriptedReply }[] = [
     prompt: "List all break options exercisable in the next 12 months",
     reply: {
       answer:
-        "Two break options are exercisable within the next 12 months:\n\n• **Café Roma** (Galeria Orkana) — Tenant break on 31 Mar 2026, 6-month notice, no penalty.\n• **Electronics Plus** (Galeria Orkana) — Landlord break on 15 Sep 2026, 9-month notice, 6 months base rent penalty.\n\nCombined annual rent at risk: PLN 738,000.",
+        "Two break options are exercisable within the next 12 months:\n\n• **Café Roma** (Galeria Verano) — Tenant break on 31 Mar 2026, 6-month notice, no penalty.\n• **Electronics Plus** (Galeria Verano) — Landlord break on 15 Sep 2026, 9-month notice, 6 months base rent penalty.\n\nCombined annual rent at risk: PLN 738,000.",
       sources: [
         { label: "Café Roma lease", ref: "§8.2 p.24" },
         { label: "Electronics Plus lease", ref: "§8.5 p.26" },
@@ -37,7 +37,7 @@ const SUGGESTED: { prompt: string; reply: ScriptedReply }[] = [
     prompt: "Show me all tenants with WAULT under 2 years",
     reply: {
       answer:
-        "Four tenants currently sit below the 2-year WAULT threshold:\n\n• **Jewellery Co** — 0.4 yrs (PLN 112,500/yr)\n• **Café Roma** — 0.7 yrs (PLN 180,000/yr)\n• **Sport Zone** — 1.9 yrs (PLN 637,500/yr)\n• **Flower Boutique** — 0.3 yrs (PLN 48,000/yr)\n\nCombined annual rent at risk: PLN 978,000 (8.4% of Galeria Orkana GRI).",
+        "Four tenants currently sit below the 2-year WAULT threshold:\n\n• **Jewellery Co** — 0.4 yrs (PLN 112,500/yr)\n• **Café Roma** — 0.7 yrs (PLN 180,000/yr)\n• **Sport Zone** — 1.9 yrs (PLN 637,500/yr)\n• **Flower Boutique** — 0.3 yrs (PLN 48,000/yr)\n\nCombined annual rent at risk: PLN 978,000 (8.4% of Galeria Verano GRI).",
       sources: [{ label: "Portfolio WAULT register", ref: "§3.1 p.6" }],
     },
   },
@@ -53,7 +53,7 @@ const SUGGESTED: { prompt: string; reply: ScriptedReply }[] = [
     prompt: "Summarize service charge reconciliation status across the portfolio",
     reply: {
       answer:
-        "Service charge reconciliations are mixed:\n\n• 5 leases on **proportional** SC (anchor + line shops).\n• 2 leases on **fixed-cap** SC: Electronics Plus (PLN 85/m²) and Optika Centrum (PLN 90/m²) — cap exposure ~PLN 47,000/yr below reconciled cost.\n• 2024 reconciliation packs for Vivo! Piła and Ogrody are still pending tenant sign-off.",
+        "Service charge reconciliations are mixed:\n\n• 5 leases on **proportional** SC (anchor + line shops).\n• 2 leases on **fixed-cap** SC: Electronics Plus (PLN 85/m²) and Optika Centrum (PLN 90/m²) — cap exposure ~PLN 47,000/yr below reconciled cost.\n• 2024 reconciliation packs for Aster! Piła and Bulwary are still pending tenant sign-off.",
       sources: [{ label: "SC reconciliation log", ref: "§9.4 p.22" }],
     },
   },
@@ -69,7 +69,7 @@ const SUGGESTED: { prompt: string; reply: ScriptedReply }[] = [
     prompt: "What's our total bank guarantee exposure expiring in the next 90 days?",
     reply: {
       answer:
-        "Guarantees expiring in next 90 days:\n\n• **Jewellery Co** — PLN 28,125 (expires 28 Feb 2026, 63 days)\n• **Mercato Anchor** (Vivo! Piła) — PLN 410,000 (expires 03 Apr 2026, 95 days)\n\nTotal exposure: **PLN 438,125** across 2 leases. Top-up notices recommended within 14 days.",
+        "Guarantees expiring in next 90 days:\n\n• **Jewellery Co** — PLN 28,125 (expires 28 Feb 2026, 63 days)\n• **Mercato Anchor** (Aster! Piła) — PLN 410,000 (expires 03 Apr 2026, 95 days)\n\nTotal exposure: **PLN 438,125** across 2 leases. Top-up notices recommended within 14 days.",
       sources: [{ label: "Guarantee register", ref: "§14.1 p.31" }],
     },
   },
