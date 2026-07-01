@@ -94,6 +94,49 @@ const expiryRiskData = [
   { tenant: "Flagship Electronics", years: 9.2, actualYears: 9.2, rent: 720_000, gla: 900 },
 ].map((d) => ({ ...d, color: bubbleColor(d.actualYears, d.gla) }));
 
+// Key Tenants Expiry Risk (portfolio view). Bubbles are individual tenants,
+// spanning all 5 buildings. Verano tenants are document-extracted; the rest
+// are illustrative until those buildings' leases are ingested.
+type KeyTenant = {
+  tenant: string;
+  building: string;
+  years: number;
+  actualYears: number;
+  rent: number;   // EUR / yr
+  gla: number;    // sqm
+  source: "Extracted" | "Illustrative";
+};
+const keyTenantRaw: KeyTenant[] = [
+  { tenant: "Anchor – Fashion", building: "Galeria Verano", gla: 1_800, rent: 293_023, years: 6.1, actualYears: 6.1, source: "Extracted" },
+  { tenant: "Sport Zone",       building: "Galeria Verano", gla:   850, rent: 148_256, years: 1.9, actualYears: 1.9, source: "Extracted" },
+  { tenant: "Electronics Plus", building: "Galeria Verano", gla:   620, rent: 108_000, years: 1.0, actualYears: 1.0, source: "Extracted" },
+  { tenant: "Kids World",       building: "Galeria Verano", gla:   340, rent:  62_000, years: 1.5, actualYears: 1.5, source: "Extracted" },
+  { tenant: "Café Roma",        building: "Galeria Verano", gla:   180, rent:  41_860, years: 0.7, actualYears: 0.7, source: "Extracted" },
+  { tenant: "Jewellery Co",     building: "Galeria Verano", gla:    75, rent:  26_163, years: 0.4, actualYears: 0.4, source: "Extracted" },
+  { tenant: "Mercato Anchor",   building: "Aster! Piła",     gla: 9_000, rent: 1_980_000, years: 0.9, actualYears: 0.9, source: "Illustrative" },
+  { tenant: "MaxStyle",         building: "Aster! Krosno",   gla: 7_500, rent: 1_650_000, years: 2.3, actualYears: 2.3, source: "Illustrative" },
+  { tenant: "Cinema Town",      building: "Aster! Stalowa Wola", gla: 3_200, rent: 780_000, years: 0.9, actualYears: 0.9, source: "Illustrative" },
+  { tenant: "Modeva",           building: "Bulwary",         gla: 2_200, rent:   650_000, years: 0.4, actualYears: 0.4, source: "Illustrative" },
+  { tenant: "Moka Cola",        building: "Bulwary",         gla: 22_000, rent: 5_720_000, years: 5.5, actualYears: 5.5, source: "Illustrative" },
+];
+// Per-tenant size-adjusted thresholds (anchors > 20k sqm need longer runway).
+const tenantTier = (gla: number, years: number): "critical" | "watch" | "safe" => {
+  if (gla > 20_000) {
+    if (years < 6) return "critical";
+    if (years < 8) return "watch";
+    return "safe";
+  }
+  if (years < 1) return "critical";
+  if (years < 3) return "watch";
+  return "safe";
+};
+const tenantTierColor = (t: "critical" | "watch" | "safe") =>
+  t === "critical" ? "#ef4444" : t === "watch" ? "#f59e0b" : "#22c55e";
+const keyTenantsRiskData = keyTenantRaw.map((t) => {
+  const tier = tenantTier(t.gla, t.actualYears);
+  return { ...t, tier, color: tenantTierColor(tier) };
+});
+
 const alerts = [
   { tone: "red", tenant: "Café Roma", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
   { tone: "red", tenant: "Jewellery Co", desc: "Bank guarantee expires in", days: 63, source: "§14.1 p.31" },
@@ -215,16 +258,21 @@ export default function Dashboard() {
       }));
   }, []);
 
-  // Building Expiry Risk Matrix (portfolio mode)
-  const buildingRiskData = useMemo(() => {
-    return PORTFOLIO.map((b) => ({
-      tenant: b.name,
-      years: b.wault,
-      actualYears: b.wault,
-      rent: b.griPln,
-      gla: b.gla,
-      color: tierColor(buildingRiskTier(b.wault, b.gla)),
-      sizeAdjusted: b.gla > 20_000,
+  // Portfolio-mode risk chart: individual KEY TENANTS across all buildings.
+  // Rent is already in EUR — convert to PLN so the shared axis formatter
+  // (which lives in the currency provider) reads it in the active currency.
+  const keyTenantsChartData = useMemo(() => {
+    return keyTenantsRiskData.map((t) => ({
+      tenant: t.tenant,
+      building: t.building,
+      years: t.years,
+      actualYears: t.actualYears,
+      rent: t.rent * 4.30, // stored PLN -> currency provider converts back
+      rentEur: t.rent,
+      gla: t.gla,
+      color: t.color,
+      tier: t.tier,
+      source: t.source,
     }));
   }, []);
 
@@ -237,12 +285,12 @@ export default function Dashboard() {
   const chartRent = portfolioMode
     ? rentByBuilding.map((b) => ({ tenant: b.name, value: b.value, color: b.color }))
     : rentData;
-  const chartRisk = portfolioMode ? buildingRiskData : expiryRiskData;
+  const chartRisk = portfolioMode ? keyTenantsChartData : expiryRiskData;
   const rentChartTitle = portfolioMode
     ? `Annual Rent by Building (${display})`
     : `Annual Rent by Tenant (${display})`;
   const riskChartTitle = portfolioMode
-    ? "Building Expiry Risk Matrix (0–10 Years)"
+    ? "Key Tenants Expiry Risk"
     : "Tenant Expiry Risk Matrix (0–10 Years)";
   const allowChartClick = !portfolioMode;
 
@@ -390,7 +438,7 @@ export default function Dashboard() {
             <h3 className="text-base font-display font-semibold">{riskChartTitle}</h3>
             <p className="text-xs text-muted-foreground mb-4">
               {portfolioMode
-                ? "Bubble size = GLA. Position = building WAULT vs GRI."
+                ? "Bubble size = tenant GLA. Position = years remaining vs annual rent. Largest tenants and flagged risks across the portfolio."
                 : "Bubble size = GLA. Position = years until lease expiry vs annual rent."}
             </p>
             {portfolioMode && (
@@ -420,29 +468,38 @@ export default function Dashboard() {
                   tickFormatter={(v) => fmtCompact(v)}
                   label={{ value: `${portfolioMode ? "GRI" : "Annual Rent"} (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
                 />
-                <ZAxis type="number" dataKey="gla" domain={portfolioMode ? [10_000, 40_000] : [50, 3000]} range={[80, 3200]} name="GLA" />
+                <ZAxis type="number" dataKey="gla" domain={portfolioMode ? [50, 25_000] : [50, 3000]} range={portfolioMode ? [80, 2400] : [80, 3200]} name="GLA" />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as typeof expiryRiskData[number];
                     const wLabel = `${d.actualYears} yrs`;
-                    const dp = payload[0].payload as { actualYears: number; gla: number; tenant: string; rent: number };
+                    const dp = payload[0].payload as {
+                      actualYears: number; gla: number; tenant: string; rent: number;
+                      building?: string; tier?: string; source?: "Extracted" | "Illustrative";
+                    };
                     const isLarge = dp.gla > 20_000;
                     const tier = portfolioMode
-                      ? (isLarge
-                          ? (dp.actualYears <= 6 ? "Critical" : dp.actualYears <= 8 ? "Watch" : "Stable")
-                          : (dp.actualYears < 1 ? "Critical" : dp.actualYears < 3 ? "Watch" : "Stable"))
+                      ? (dp.tier ? dp.tier.charAt(0).toUpperCase() + dp.tier.slice(1) : "—")
                       : (d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable");
                     const am = fmtAM(d.rent);
                     return (
                       <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
                         <div className="font-semibold mb-1">{d.tenant}</div>
+                        {portfolioMode && dp.building && (
+                          <div className="text-muted-foreground mb-1">{dp.building}</div>
+                        )}
                         <div>WAULT: {wLabel}</div>
                         <div>{am.primary}</div>
                         <div className="text-muted-foreground">{am.secondary}</div>
                         <div>GLA: {d.gla.toLocaleString()} m²</div>
                         <div>Risk tier: {tier}{portfolioMode && isLarge ? " (size-adjusted)" : ""}</div>
+                        {portfolioMode && dp.source && (
+                          <div className={cn("mt-1 text-[11px] italic", dp.source === "Extracted" ? "text-emerald-600" : "text-muted-foreground")}>
+                            {dp.source === "Extracted" ? "Source-verified" : "Illustrative — pending document extraction"}
+                          </div>
+                        )}
                       </div>
                     );
                   }}
@@ -462,9 +519,24 @@ export default function Dashboard() {
                   strokeDasharray="4 4"
                   label={{ value: "Watch", position: "top", fill: "#f59e0b", fontSize: 10 }}
                 />
+                {portfolioMode && (
+                  <ReferenceLine
+                    x={6}
+                    stroke="#ef4444"
+                    strokeDasharray="2 6"
+                    label={{ value: "Anchor Critical (>20k sqm)", position: "top", fill: "#ef4444", fontSize: 10 }}
+                  />
+                )}
                 <Scatter data={chartRisk}>
                   {chartRisk.map((d, i) => (
-                    <Cell key={i} fill={d.color} fillOpacity={0.7} stroke={d.color} />
+                    <Cell
+                      key={i}
+                      fill={d.color}
+                      fillOpacity={0.7}
+                      stroke={d.color}
+                      strokeWidth={2}
+                      strokeDasharray={portfolioMode && (d as { source?: string }).source === "Illustrative" ? "4 3" : undefined}
+                    />
                   ))}
                   <LabelList
                     dataKey="tenant"
@@ -475,6 +547,11 @@ export default function Dashboard() {
                 </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
+            {portfolioMode && (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Solid border = document-extracted · Dashed border = illustrative estimate
+              </p>
+            )}
           </Card>
 
           <div ref={alertsRef} className="space-y-3">
