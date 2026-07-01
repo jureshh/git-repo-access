@@ -420,7 +420,7 @@ export default function Dashboard() {
                   tickFormatter={(v) => fmtCompact(v)}
                   label={{ value: `${portfolioMode ? "GRI" : "Annual Rent"} (${display})`, angle: -90, position: "insideLeft", style: { fontSize: 11, fill: "hsl(var(--muted-foreground))", textAnchor: "middle" } }}
                 />
-                <ZAxis type="number" dataKey="gla" domain={portfolioMode ? [10_000, 40_000] : [50, 2000]} range={[80, 2400]} name="GLA" />
+                <ZAxis type="number" dataKey="gla" domain={portfolioMode ? [10_000, 40_000] : [50, 3000]} range={[80, 3200]} name="GLA" />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   content={({ active, payload }) => {
