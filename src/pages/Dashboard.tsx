@@ -422,7 +422,13 @@ export default function Dashboard() {
                     if (!active || !payload?.length) return null;
                     const d = payload[0].payload as typeof expiryRiskData[number];
                     const wLabel = `${d.actualYears} yrs`;
-                    const tier = d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable";
+                    const dp = payload[0].payload as { actualYears: number; gla: number; tenant: string; rent: number };
+                    const isLarge = dp.gla > 20_000;
+                    const tier = portfolioMode
+                      ? (isLarge
+                          ? (dp.actualYears <= 6 ? "Critical" : dp.actualYears <= 8 ? "Watch" : "Stable")
+                          : (dp.actualYears < 1 ? "Critical" : dp.actualYears < 3 ? "Watch" : "Stable"))
+                      : (d.actualYears < 1 ? "Critical" : d.actualYears < 3 ? "Watch" : "Stable");
                     const am = fmtAM(d.rent);
                     return (
                       <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
@@ -431,7 +437,7 @@ export default function Dashboard() {
                         <div>{am.primary}</div>
                         <div className="text-muted-foreground">{am.secondary}</div>
                         <div>GLA: {d.gla.toLocaleString()} m²</div>
-                        <div>Risk tier: {tier}</div>
+                        <div>Risk tier: {tier}{portfolioMode && isLarge ? " (size-adjusted)" : ""}</div>
                       </div>
                     );
                   }}
