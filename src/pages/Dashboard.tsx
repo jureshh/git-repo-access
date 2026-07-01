@@ -67,8 +67,13 @@ const rentData = [
   { tenant: "Optika Centrum", value: 99_750, color: C.green },
 ];
 
-const bubbleColor = (years: number) =>
-  years < 1 ? "#ef4444" : years < 3 ? "#f59e0b" : "#22c55e";
+// Tenant risk color: small/mid tenants use the standard year thresholds,
+// but very large anchors (>=1,500 sqm) are red whenever they roll off inside
+// a ~7-year horizon — backfilling anchor GLA takes years.
+const bubbleColor = (years: number, gla = 0) => {
+  if (gla >= 1500 && years < 7) return "#ef4444";
+  return years < 1 ? "#ef4444" : years < 3 ? "#f59e0b" : "#22c55e";
+};
 
 const expiryRiskData = [
   { tenant: "Jewellery Co", years: 0.4, actualYears: 0.4, rent: 112_500, gla: 75 },
@@ -82,12 +87,12 @@ const expiryRiskData = [
   { tenant: "Book Store", years: 3.2, actualYears: 3.2, rent: 320_000, gla: 400 },
   { tenant: "Home & Living", years: 4.1, actualYears: 4.1, rent: 450_000, gla: 550 },
   { tenant: "Optika Centrum", years: 4.8, actualYears: 4.8, rent: 99_750, gla: 95 },
-  { tenant: "Anchor – Fashion", years: 6.1, actualYears: 6.1, rent: 1_260_000, gla: 1800 },
+  { tenant: "Anchor – Fashion", years: 6.1, actualYears: 6.1, rent: 1_960_000, gla: 2800 },
   { tenant: "Fashion Outlet", years: 5.4, actualYears: 5.4, rent: 840_000, gla: 1200 },
   { tenant: "Pharmacy Plus", years: 7.1, actualYears: 7.1, rent: 410_000, gla: 480 },
   { tenant: "Anchor – Grocery", years: 8.5, actualYears: 8.5, rent: 1_050_000, gla: 1600 },
   { tenant: "Flagship Electronics", years: 9.2, actualYears: 9.2, rent: 720_000, gla: 900 },
-].map((d) => ({ ...d, color: bubbleColor(d.actualYears) }));
+].map((d) => ({ ...d, color: bubbleColor(d.actualYears, d.gla) }));
 
 const alerts = [
   { tone: "red", tenant: "Café Roma", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
@@ -226,7 +231,7 @@ export default function Dashboard() {
   // Conditional chart data sources
   const portfolioExpiryColored = portfolioExpiryByYear.map((d) => ({
     ...d,
-    color: d.year === "2026" ? C.red : ["2027", "2028"].includes(d.year) ? C.amber : C.teal,
+    color: ["2026", "2027"].includes(d.year) ? C.red : d.year === "2028" ? C.amber : C.teal,
   }));
   const chartExpiry = portfolioMode ? portfolioExpiryColored : buildingExpiryData;
   const chartRent = portfolioMode
