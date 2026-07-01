@@ -1,283 +1,241 @@
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FLOORS, Floor, STATUS_FILL, Unit, unitsByFloor } from "./data";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FLOORS, Floor, STATUS_FILL, STATUS_META, Unit, unitsByFloor } from "./data";
 
 interface Props {
-  floor: Floor;
-  onFloorChange: (f: Floor) => void;
+  /** Legacy prop — ignored in stacking plan (kept for API compat). */
+  floor?: Floor;
+  /** Legacy prop — ignored. */
+  onFloorChange?: (f: Floor) => void;
   selectedUnitId: string | null;
   onSelectUnit: (id: string) => void;
 }
 
-function UnitShape({
+const floorLabel = (f: Floor) => (f === "GF" ? "Ground Floor" : `Floor ${f}`);
+const anchorId = (f: Floor) => `stack-floor-${f}`;
+
+function Segment({
   unit,
+  widthPct,
   selected,
   onClick,
 }: {
   unit: Unit;
+  widthPct: number;
   selected: boolean;
   onClick: () => void;
 }) {
   const fill = STATUS_FILL[unit.status];
   const isVacant = unit.status === "grey";
-  const narrow = unit.w < 95;
-  const innerW = unit.w - 12;
-  const tenantFs = unit.w < 110 ? (unit.w < 80 ? 9 : 10) : 12;
-  const charW = tenantFs * 0.58;
-  const fitsOneLine = unit.tenant.length * charW <= innerW;
-  const words = unit.tenant.split(" ");
-  const wrap = !fitsOneLine && words.length > 1;
-  const line1 = wrap ? words[0] : unit.tenant;
-  const line2 = wrap ? words.slice(1).join(" ") : "";
-  const metaFs = unit.w < 110 ? 9 : 10;
-  const showWault = !isVacant && !narrow;
-  const showAlert = !!unit.alert && !narrow;
+  const showText = widthPct >= 8;
+  const wide = widthPct >= 18;
+
   return (
-    <g
-      onClick={onClick}
-      style={{
-        cursor: "pointer",
-        filter: selected ? "drop-shadow(0 0 8px hsl(var(--primary)))" : undefined,
-      }}
-    >
-      {/* Unit fill */}
-      <rect
-        x={unit.x}
-        y={unit.y}
-        width={unit.w}
-        height={unit.h}
-        rx={2}
-        fill={fill}
-        fillOpacity={isVacant ? 0.18 : 0.18}
-        stroke={selected ? "hsl(var(--primary))" : fill}
-        strokeWidth={selected ? 3 : 2}
-      />
-      {/* Status accent bar on top */}
-      <rect
-        x={unit.x}
-        y={unit.y}
-        width={unit.w}
-        height={6}
-        fill={fill}
-        fillOpacity={isVacant ? 0.4 : 1}
-      />
-      <text
-        x={unit.x + 8}
-        y={unit.y + 22}
-        fill="hsl(var(--foreground))"
-        fontSize={tenantFs}
-        fontWeight={700}
-      >
-        {line1}
-        {wrap && (
-          <tspan x={unit.x + 8} dy={tenantFs + 2}>
-            {line2}
-          </tspan>
-        )}
-      </text>
-      <text
-        x={unit.x + 8}
-        y={unit.y + (wrap ? 22 + (tenantFs + 2) + 14 : 38)}
-        fill="hsl(var(--muted-foreground))"
-        fontSize={metaFs}
-      >
-        {unit.sqm.toLocaleString()} sqm
-      </text>
-      {showWault && (
-        <text
-          x={unit.x + unit.w - 8}
-          y={unit.y + unit.h - 8}
-          fill={fill}
-          fontSize={metaFs}
-          fontWeight={600}
-          textAnchor="end"
-        >
-          {unit.wault}
-        </text>
-      )}
-      {showAlert && (
-        <g transform={`translate(${unit.x + unit.w - 14}, ${unit.y + 16})`}>
-          <circle cx={0} cy={0} r={8} fill={fill} />
-          <path
-            d="M-3 -3 a3 3 0 0 1 6 0 v2 l1 2 h-8 l1 -2 z M-1.5 2 a1.5 1.5 0 0 0 3 0"
-            fill="none"
-            stroke="white"
-            strokeWidth={1.2}
-            strokeLinejoin="round"
-          />
-        </g>
-      )}
-      <text
-        x={unit.x + 8}
-        y={unit.y + unit.h - 8}
-        fill="hsl(var(--muted-foreground))"
-        fontSize={9}
-        fontWeight={500}
-      >
-        {unit.id}
-      </text>
-    </g>
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onClick}
+            style={{
+              width: `${widthPct}%`,
+              backgroundColor: isVacant ? "transparent" : fill,
+              backgroundImage: isVacant
+                ? "repeating-linear-gradient(45deg, hsl(var(--muted-foreground) / 0.25) 0 4px, transparent 4px 10px)"
+                : undefined,
+              borderColor: selected ? "hsl(var(--primary))" : fill,
+              boxShadow: selected ? "0 0 0 2px hsl(var(--primary) / 0.5)" : undefined,
+            }}
+            className={[
+              "relative h-full border-2 first:rounded-l-md last:rounded-r-md text-left",
+              "transition-transform hover:z-10 hover:scale-[1.01] focus:outline-none focus:z-10",
+              isVacant ? "bg-muted/40" : "",
+            ].join(" ")}
+          >
+            {/* Top status accent */}
+            <div
+              className="absolute top-0 left-0 right-0 h-1"
+              style={{ backgroundColor: fill, opacity: isVacant ? 0.5 : 1 }}
+            />
+
+            {/* Center label */}
+            {showText ? (
+              <div
+                className={[
+                  "absolute inset-0 flex flex-col items-start justify-center px-2 pt-2 pb-4 overflow-hidden",
+                  isVacant ? "text-muted-foreground" : "text-foreground",
+                ].join(" ")}
+              >
+                <span
+                  className={[
+                    "font-semibold leading-tight truncate w-full",
+                    wide ? "text-xs" : "text-[10px]",
+                  ].join(" ")}
+                >
+                  {unit.tenant}
+                </span>
+                {wide && (
+                  <span className="text-[10px] opacity-80 leading-tight">
+                    {unit.sqm.toLocaleString()} sqm
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[9px] font-semibold text-foreground/80">{unit.id}</span>
+              </div>
+            )}
+
+            {/* Alert bell */}
+            {unit.alert && (
+              <div
+                className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
+                style={{ backgroundColor: fill }}
+                aria-label="alert"
+              >
+                !
+              </div>
+            )}
+
+            {/* Unit code bottom-left */}
+            {showText && (
+              <span className="absolute bottom-1 left-2 text-[9px] font-medium text-muted-foreground">
+                {unit.id}
+              </span>
+            )}
+
+            {/* WAULT bottom-right */}
+            {showText && !isVacant && wide && (
+              <span
+                className="absolute bottom-1 right-2 text-[9px] font-semibold"
+                style={{ color: fill }}
+              >
+                {unit.wault}
+              </span>
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          <div className="font-semibold">{unit.tenant}</div>
+          <div className="text-muted-foreground">
+            {unit.sqm.toLocaleString()} sqm · {widthPct.toFixed(1)}% of floor
+          </div>
+          <div className="text-muted-foreground">
+            WAULT: {unit.wault} · {STATUS_META[unit.status].label}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
-export function FloorPlan({ floor, onFloorChange, selectedUnitId, onSelectUnit }: Props) {
-  const units = unitsByFloor[floor];
+function FloorRow({
+  floor,
+  units,
+  selectedUnitId,
+  onSelectUnit,
+}: {
+  floor: Floor;
+  units: Unit[];
+  selectedUnitId: string | null;
+  onSelectUnit: (id: string) => void;
+}) {
+  const totalSqm = units.reduce((s, u) => s + u.sqm, 0);
   return (
-    <Card className="glass p-3 flex flex-col">
-      <div className="flex items-center justify-between mb-2">
-        <Tabs value={floor} onValueChange={(v) => onFloorChange(v as Floor)}>
-          <TabsList className="bg-muted/50">
-            {FLOORS.map((f) => (
-              <TabsTrigger
-                key={f}
-                value={f}
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+    <div id={anchorId(floor)} className="flex items-stretch gap-3 scroll-mt-20">
+      <div className="w-32 shrink-0 flex flex-col justify-center text-right pr-1">
+        <span className="text-xs font-semibold text-foreground">{floorLabel(floor)}</span>
+        <span className="text-[10px] text-muted-foreground">
+          {totalSqm.toLocaleString()} sqm GLA
+        </span>
+      </div>
+      <div className="flex-1 h-16 flex rounded-md overflow-hidden bg-muted/30 border border-border">
+        {units.length === 0 ? (
+          <div className="w-full flex items-center justify-center text-[11px] text-muted-foreground">
+            No units
+          </div>
+        ) : (
+          units.map((u) => (
+            <Segment
+              key={u.id}
+              unit={u}
+              widthPct={totalSqm ? (u.sqm / totalSqm) * 100 : 0}
+              selected={u.id === selectedUnitId}
+              onClick={() => onSelectUnit(u.id)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function FloorPlan({ selectedUnitId, onSelectUnit }: Props) {
+  // Highest floor first, GF at bottom
+  const ordered = [...FLOORS].sort((a, b) => {
+    if (a === "GF") return 1;
+    if (b === "GF") return -1;
+    return Number(b) - Number(a);
+  });
+
+  return (
+    <Card className="glass p-4 flex flex-col">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="font-medium text-foreground">Jump to:</span>
+          {ordered.map((f, i) => (
+            <span key={f} className="flex items-center gap-2">
+              {i > 0 && <span className="text-border">·</span>}
+              <a
+                href={`#${anchorId(f)}`}
+                className="hover:text-primary transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document
+                    .getElementById(anchorId(f))
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
               >
-                {f === "GF" ? "GF" : `Floor ${f}`}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground pr-1">
+                {f === "GF" ? "GF" : `F${f}`}
+              </a>
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <LegendDot color={STATUS_FILL.green} label="Secure" />
           <LegendDot color={STATUS_FILL.amber} label="Watch" />
           <LegendDot color={STATUS_FILL.red} label="Critical" />
-          <LegendDot color={STATUS_FILL.grey} label="Vacant" />
+          <LegendDot color={STATUS_FILL.grey} label="Vacant" hatched />
         </div>
       </div>
 
-      <div className="rounded-lg overflow-hidden border border-border bg-muted/30">
-        <svg
-          viewBox="0 0 900 480"
-          className="w-full h-auto block"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <pattern
-              id="floorGrid"
-              width="20"
-              height="20"
-              patternUnits="userSpaceOnUse"
-            >
-              <path
-                d="M 20 0 L 0 0 0 20"
-                fill="none"
-                stroke="hsl(var(--border))"
-                strokeWidth="0.5"
-              />
-            </pattern>
-          </defs>
-
-          {/* Building outline / shell */}
-          <rect
-            x={8}
-            y={8}
-            width={884}
-            height={464}
-            rx={4}
-            fill="hsl(var(--card))"
-            stroke="hsl(var(--border))"
-            strokeWidth={1}
+      <div className="max-h-[520px] overflow-y-auto pr-1 space-y-2.5">
+        {ordered.map((f) => (
+          <FloorRow
+            key={f}
+            floor={f}
+            units={unitsByFloor[f]}
+            selectedUnitId={selectedUnitId}
+            onSelectUnit={onSelectUnit}
           />
-          <rect x={8} y={8} width={884} height={464} fill="url(#floorGrid)" />
-
-          {/* Corridor (Common Area) — horizontal spine + small offshoots */}
-          <g>
-            <rect
-              x={250}
-              y={192}
-              width={634}
-              height={104}
-              fill="hsl(var(--muted))"
-              stroke="hsl(var(--border))"
-              strokeWidth={1}
-            />
-            <text
-              x={567}
-              y={248}
-              fill="hsl(var(--muted-foreground))"
-              fontSize={12}
-              fontWeight={500}
-              textAnchor="middle"
-              letterSpacing="2"
-            >
-              COMMON AREA
-            </text>
-
-            {/* Escalator markers */}
-            <g transform="translate(420, 218)">
-              <rect width={56} height={52} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-              <path
-                d="M6 46 L50 6 M14 46 L50 14 M22 46 L50 22"
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth={1.5}
-                fill="none"
-              />
-              <text x={28} y={62} fontSize={7} fill="hsl(var(--muted-foreground))" textAnchor="middle">
-                ESC
-              </text>
-            </g>
-
-            {/* Restrooms / utility */}
-            <g transform="translate(680, 218)">
-              <rect width={44} height={52} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-              <text x={22} y={32} fontSize={11} fill="hsl(var(--muted-foreground))" textAnchor="middle">
-                WC
-              </text>
-            </g>
-
-            {/* Stairs */}
-            <g transform="translate(800, 218)">
-              <rect width={44} height={52} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-              <path
-                d="M4 48 H40 M4 40 H40 M4 32 H40 M4 24 H40 M4 16 H40 M4 8 H40"
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth={0.8}
-                fill="none"
-              />
-            </g>
-          </g>
-
-          {/* Units */}
-          {units.length === 0 ? (
-            <text
-              x={450}
-              y={240}
-              fill="hsl(var(--muted-foreground))"
-              fontSize={16}
-              textAnchor="middle"
-            >
-              No unit data for this floor
-            </text>
-          ) : (
-            units.map((u) => (
-              <UnitShape
-                key={u.id}
-                unit={u}
-                selected={u.id === selectedUnitId}
-                onClick={() => onSelectUnit(u.id)}
-              />
-            ))
-          )}
-
-          {/* Compass + scale */}
-          <g transform="translate(840, 36)">
-            <circle cx={0} cy={0} r={14} fill="hsl(var(--card))" stroke="hsl(var(--border))" />
-            <path d="M0 -10 L4 4 L0 0 L-4 4 Z" fill="hsl(var(--foreground))" />
-            <text x={0} y={-16} fontSize={8} fill="hsl(var(--muted-foreground))" textAnchor="middle">
-              N
-            </text>
-          </g>
-        </svg>
+        ))}
       </div>
     </Card>
   );
 }
 
-function LegendDot({ color, label }: { color: string; label: string }) {
+function LegendDot({ color, label, hatched }: { color: string; label: string; hatched?: boolean }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+      <span
+        className="inline-block h-2.5 w-2.5 rounded-sm"
+        style={{
+          background: hatched
+            ? `repeating-linear-gradient(45deg, ${color} 0 2px, transparent 2px 4px)`
+            : color,
+          border: hatched ? `1px solid ${color}` : undefined,
+        }}
+      />
       <span>{label}</span>
     </div>
   );
