@@ -1,5 +1,10 @@
 // Portfolio-wide synthetic dataset (5 CPI Property Group Poland shopping centres).
-// Galeria Orkana is the only LIVE building — the others are headline KPIs only.
+// Galeria Verano is the only LIVE building — the others are headline KPIs only.
+// Building/tenant names are fictionalised to avoid coincidental resemblance to
+// real, fact-checkable assets. GRI figures assume a €26/sqm/month blended base
+// rent applied to occupied GLA (approx €312/sqm/yr). NOI = GRI × 0.72. All
+// monetary fields are stored in PLN using an assumed FX rate of 4.30 PLN/EUR
+// so the existing currency conversion utilities continue to work unchanged.
 
 export interface PortfolioBuilding {
   id: string;
@@ -17,62 +22,62 @@ export interface PortfolioBuilding {
 export const PORTFOLIO: PortfolioBuilding[] = [
   {
     id: "galeria-orkana",
-    name: "Galeria Orkana",
+    name: "Galeria Verano",
     city: "Lublin",
     live: true,
     gla: 18_450,
     occupied: 0.932,
     wault: 4.2,
-    griPln: 11_680_000,
-    noiPln: 8_410_000,
+    griPln: 23_650_000,
+    noiPln: 17_028_000,
     nextMajorExpiry: "Jun 2026",
   },
   {
     id: "vivo-pila",
-    name: "Vivo! Piła",
+    name: "Aster! Piła",
     city: "Piła",
     live: false,
     gla: 27_800,
     occupied: 0.985,
-    wault: 4.6,
-    griPln: 17_200_000,
-    noiPln: 12_400_000,
+    wault: 2.5,
+    griPln: 36_722_000,
+    noiPln: 26_445_000,
     nextMajorExpiry: "Sep 2027",
   },
   {
     id: "vivo-krosno",
-    name: "Vivo! Krosno",
+    name: "Aster! Krosno",
     city: "Krosno",
     live: false,
     gla: 24_200,
     occupied: 0.991,
-    wault: 5.1,
-    griPln: 15_600_000,
-    noiPln: 11_300_000,
+    wault: 2.3,
+    griPln: 32_164_000,
+    noiPln: 23_177_000,
     nextMajorExpiry: "Mar 2028",
   },
   {
     id: "vivo-stalowa-wola",
-    name: "Vivo! Stalowa Wola",
+    name: "Aster! Stalowa Wola",
     city: "Stalowa Wola",
     live: false,
     gla: 19_600,
     occupied: 0.897,
-    wault: 2.8,
-    griPln: 10_400_000,
-    noiPln: 7_100_000,
+    wault: 1.0,
+    griPln: 23_607_000,
+    noiPln: 16_985_000,
     nextMajorExpiry: "Feb 2026",
   },
   {
     id: "ogrody",
-    name: "Ogrody",
+    name: "Bulwary",
     city: "Elbląg",
     live: false,
     gla: 33_500,
     occupied: 0.914,
-    wault: 3.4,
-    griPln: 19_800_000,
-    noiPln: 13_900_000,
+    wault: 6.0,
+    griPln: 41_065_000,
+    noiPln: 29_584_000,
     nextMajorExpiry: "Nov 2027",
   },
 ];
@@ -94,8 +99,9 @@ export function portfolioTotals(items: PortfolioBuilding[] = PORTFOLIO): Portfol
   const noiPln = items.reduce((s, b) => s + b.noiPln, 0);
   const waultGriWeighted =
     items.reduce((s, b) => s + b.wault * b.griPln, 0) / griPln;
-  // Assumed aggregate asset value for demo purposes (PLN ~780M ≈ 6.8% NOI yield).
-  const assetValue = 780_000_000;
+  // Portfolio value implied by a 6% cap rate on aggregate NOI. NOI yield is
+  // therefore fixed at ~6.0% by construction, per market-benchmark assumption.
+  const assetValue = noiPln / 0.06;
   return {
     gla,
     occupiedGla,
@@ -128,12 +134,12 @@ export interface PortfolioAlert {
 }
 
 export const portfolioAlerts: PortfolioAlert[] = [
-  { tone: "red", tenant: "Café Roma", building: "Galeria Orkana", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
-  { tone: "red", tenant: "Jewellery Co", building: "Galeria Orkana", desc: "Bank guarantee expires in", days: 63, source: "§14.1 p.31" },
-  { tone: "red", tenant: "Mercato Anchor", building: "Vivo! Piła", desc: "Bank guarantee expires in", days: 95, source: "§14.2 p.33" },
-  { tone: "amber", tenant: "Sport Zone", building: "Galeria Orkana", desc: "Bank guarantee expires in", days: 187, source: "§12.3 p.29" },
-  { tone: "amber", tenant: "H&M", building: "Ogrody", desc: "Tenant break option exercisable in", days: 145, source: "§8.4 p.27" },
-  { tone: "amber", tenant: "Cinema City", building: "Vivo! Stalowa Wola", desc: "Lease expiry in", days: 320, source: "§3.1 p.8" },
-  { tone: "amber", tenant: "Electronics Plus", building: "Galeria Orkana", desc: "Landlord break option exercisable in", days: 365, source: "§8.5 p.26" },
-  { tone: "amber", tenant: "Kids World", building: "Galeria Orkana", desc: "Lease expiry in", days: 540, source: "§3.1 p.6" },
+  { tone: "red", tenant: "Café Roma", building: "Galeria Verano", desc: "Break option notice window opens in", days: 38, source: "§8.2 p.24" },
+  { tone: "red", tenant: "Jewellery Co", building: "Galeria Verano", desc: "Bank guarantee expires in", days: 63, source: "§14.1 p.31" },
+  { tone: "red", tenant: "Mercato Anchor", building: "Aster! Piła", desc: "Bank guarantee expires in", days: 95, source: "§14.2 p.33" },
+  { tone: "amber", tenant: "Sport Zone", building: "Galeria Verano", desc: "Bank guarantee expires in", days: 187, source: "§12.3 p.29" },
+  { tone: "amber", tenant: "Modeva", building: "Bulwary", desc: "Tenant break option exercisable in", days: 145, source: "§8.4 p.27" },
+  { tone: "amber", tenant: "Cinema Town", building: "Aster! Stalowa Wola", desc: "Lease expiry in", days: 320, source: "§3.1 p.8" },
+  { tone: "amber", tenant: "Electronics Plus", building: "Galeria Verano", desc: "Landlord break option exercisable in", days: 365, source: "§8.5 p.26" },
+  { tone: "amber", tenant: "Kids World", building: "Galeria Verano", desc: "Lease expiry in", days: 540, source: "§3.1 p.6" },
 ];
