@@ -27,8 +27,7 @@ function Segment({
 }) {
   const fill = STATUS_FILL[unit.status];
   const isVacant = unit.status === "grey";
-  const showText = widthPct >= 8;
-  const wide = widthPct >= 18;
+  const wide = widthPct >= 22;
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -58,31 +57,20 @@ function Segment({
               style={{ backgroundColor: fill, opacity: isVacant ? 0.5 : 1 }}
             />
 
-            {/* Center label */}
-            {showText ? (
+            {/* Center label — only when segment is wide enough to read */}
+            {wide && (
               <div
                 className={[
-                  "absolute inset-0 flex flex-col items-start justify-center px-2 pt-2 pb-4 overflow-hidden",
+                  "absolute inset-0 flex flex-col items-start justify-center px-2 overflow-hidden",
                   isVacant ? "text-muted-foreground" : "text-foreground",
                 ].join(" ")}
               >
-                <span
-                  className={[
-                    "font-semibold leading-tight truncate w-full",
-                    wide ? "text-xs" : "text-[10px]",
-                  ].join(" ")}
-                >
+                <span className="font-semibold leading-tight truncate w-full text-xs">
                   {unit.tenant}
                 </span>
-                {wide && (
-                  <span className="text-[10px] opacity-80 leading-tight">
-                    {unit.sqm.toLocaleString()} sqm
-                  </span>
-                )}
-              </div>
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[9px] font-semibold text-foreground/80">{unit.id}</span>
+                <span className="text-[10px] opacity-80 leading-tight">
+                  {unit.sqm.toLocaleString()} sqm
+                </span>
               </div>
             )}
 
@@ -96,27 +84,11 @@ function Segment({
                 !
               </div>
             )}
-
-            {/* Unit code bottom-left */}
-            {showText && (
-              <span className="absolute bottom-1 left-2 text-[9px] font-medium text-muted-foreground">
-                {unit.id}
-              </span>
-            )}
-
-            {/* WAULT bottom-right */}
-            {showText && !isVacant && wide && (
-              <span
-                className="absolute bottom-1 right-2 text-[9px] font-semibold"
-                style={{ color: fill }}
-              >
-                {unit.wault}
-              </span>
-            )}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          <div className="font-semibold">{unit.tenant}</div>
+        <TooltipContent side="top" className="text-xs space-y-0.5">
+          <div className="font-semibold text-sm">{unit.tenant}</div>
+          <div className="text-muted-foreground">Unit {unit.id}</div>
           <div className="text-muted-foreground">
             {unit.sqm.toLocaleString()} sqm · {widthPct.toFixed(1)}% of floor
           </div>
@@ -181,26 +153,9 @@ export function FloorPlan({ selectedUnitId, onSelectUnit }: Props) {
   return (
     <Card className="glass p-4 flex flex-col">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span className="font-medium text-foreground">Jump to:</span>
-          {ordered.map((f, i) => (
-            <span key={f} className="flex items-center gap-2">
-              {i > 0 && <span className="text-border">·</span>}
-              <a
-                href={`#${anchorId(f)}`}
-                className="hover:text-primary transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document
-                    .getElementById(anchorId(f))
-                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                }}
-              >
-                {f === "GF" ? "GF" : `F${f}`}
-              </a>
-            </span>
-          ))}
-        </div>
+        <span className="text-[11px] text-muted-foreground">
+          Hover a segment for tenant details
+        </span>
         <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <LegendDot color={STATUS_FILL.green} label="Secure" />
           <LegendDot color={STATUS_FILL.amber} label="Watch" />
