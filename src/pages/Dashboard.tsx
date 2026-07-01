@@ -15,7 +15,7 @@ import { BuildingNavBar, BUILDINGS } from "@/components/dashboard/BuildingNavBar
 import { FloorPlan } from "@/components/building/FloorPlan";
 import { LeaseDetailPanel } from "@/components/building/LeaseDetailPanel";
 import { UnitTable } from "@/components/building/UnitTable";
-import { Floor, unitsByFloor } from "@/components/building/data";
+import { FLOORS, Floor, unitsByFloor } from "@/components/building/data";
 import { PORTFOLIO, portfolioTotals, portfolioExpiryByYear, portfolioAlerts } from "@/lib/portfolio";
 
 const C = {
@@ -132,8 +132,12 @@ export default function Dashboard() {
   const activeBuilding = selectedBuilding ? BUILDINGS.find((b) => b.id === selectedBuilding) : null;
   const activePortfolio = selectedBuilding ? PORTFOLIO.find((b) => b.id === selectedBuilding) : null;
   const liveBuilding = activeBuilding?.live ? activeBuilding : null;
-  const units = unitsByFloor[floor];
-  const selectedUnit = units.find((u) => u.id === selectedUnitId) ?? null;
+  const allUnits = useMemo(() => FLOORS.flatMap((f) => unitsByFloor[f]), []);
+  const selectedUnit = allUnits.find((u) => u.id === selectedUnitId) ?? null;
+  const selectedFloor = selectedUnit
+    ? FLOORS.find((f) => unitsByFloor[f].some((u) => u.id === selectedUnit.id)) ?? floor
+    : floor;
+  const units = unitsByFloor[selectedFloor];
   const filteredUnits = selectedUnit ? units.filter((u) => u.id === selectedUnit.id) : units;
 
   const handleSelectBuilding = (id: string | null) => {
@@ -622,8 +626,6 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
                 <div className="lg:col-span-3">
                   <FloorPlan
-                    floor={floor}
-                    onFloorChange={(f) => { setFloor(f); setSelectedUnitId(null); }}
                     selectedUnitId={selectedUnitId}
                     onSelectUnit={setSelectedUnitId}
                   />
